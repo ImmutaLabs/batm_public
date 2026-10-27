@@ -1,5 +1,5 @@
 /*************************************************************************************
- * Copyright (C) 2014-2020 GENERAL BYTES s.r.o. All rights reserved.
+ * Copyright (C) 2014-2024 GENERAL BYTES s.r.o. All rights reserved.
  *
  * This software may be distributed and modified under the terms of the GNU
  * General Public License version 2 (GPL2) as published by the Free Software
@@ -29,6 +29,16 @@ public class BinanceCoinAddressValidator implements ICryptoAddressValidator {
     @Override
     public boolean isAddressValid(String address) {
         try {
+            address = getAddressWithoutTag(address);
+            // BNB Smart Chain is EVM-compatible and uses Ethereum-style addresses.
+            // Address format: 20 bytes represented as 40 hexadecimal characters prefixed with "0x".
+            // https://docs.bnbchain.org/docs/learn/intro/
+            // https://ethereum.org/en/developers/docs/accounts/
+            if (address.startsWith("0x") && address.length() == 42) {
+                return address.matches("^0x[0-9a-fA-F]{40}$");
+            }
+
+            // BNB Beacon Chain Bech32
             Bech32.Bech32Data bech32Data = Bech32.decodeUnlimitedLength(address);
             if (!bech32Data.hrp.equals("bnb")) {
                 log.info("Address HRP is not 'bnb'");
@@ -36,7 +46,7 @@ public class BinanceCoinAddressValidator implements ICryptoAddressValidator {
             }
             return true;
         } catch (AddressFormatException e) {
-            log.error("Cannot decode Bech32 address", e);
+            log.info("Invalid BNB address format.");
             return false;
         }
     }
@@ -50,4 +60,9 @@ public class BinanceCoinAddressValidator implements ICryptoAddressValidator {
     public boolean mustBeBase58Address() {
         return false;
     }
+
+    private String getAddressWithoutTag(String address) {
+        return address.split(":")[0];
+    }
+
 }

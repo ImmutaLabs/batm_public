@@ -1,34 +1,13 @@
-apply plugin: "java"
-apply plugin: "com.generalbytes.gradle.main"
-apply plugin: 'maven-publish'
+plugins {
+    id("shared-publish-conventions")
+}
 
 group = projectGroup
 version = projectVersion
 
-publishing {
-    if (hasGbUploadArtifactory) {
-        repositories {
-            maven {
-                credentials {
-                    username gbArtifactoryUser
-                    password gbArtifactoryPassword
-                }
-                url gbArtifactoryUploadUrl
-            }
-        }
+java {
+    toolchain {
+        // must stay on Java 11 due to compatibility issues
+        languageVersion.set(JavaLanguageVersion.of(11))
     }
-
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-        }
-    }
-}
-
-dependencySubstitutions {
-    substitute file(batmDependencySubstitutionConfig)
-}
-dependencyVerifications {
-    checksums batmDependencyChecksumsConfig
-    printUnusedAssertions false
 }

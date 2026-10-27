@@ -30,6 +30,8 @@ public interface ITransactionDetails {
     int TYPE_SELL_CRYPTO = 1;
     int TYPE_WITHDRAW_CASH = 2;
     int TYPE_CASHBACK = 3;
+    int TYPE_ORDER_CRYPTO = 4;
+    int TYPE_DEPOSIT_CASH = 5;
 
     //Buy states
     int STATUS_BUY_IN_PROGRESS = 0;
@@ -53,6 +55,16 @@ public interface ITransactionDetails {
     //Cashback states
     int STATUS_CASHBACK_COMPLETED = 0;
     int STATUS_CASHBACK_ERROR = 1;
+
+    // ORDER STATES
+    int STATUS_ORDER_IN_PROGRESS = 0;
+    int STATUS_ORDER_CASH_DEPOSITED = 1;
+    int STATUS_ORDER_COMPLETED = 2;
+    int STATUS_ORDER_ERROR = 3;
+
+    // DEPOSIT STATES
+    int STATUS_DEPOSIT_COMPLETED = 0;
+    int STATUS_DEPOSIT_ERROR = 1;
 
     //error codes
     int BUY_ERROR_NO_ERROR = 0;
@@ -246,6 +258,15 @@ public interface ITransactionDetails {
     String getCellPhoneUsed();
 
     /**
+     * Contains customer email address that was used during transaction
+     *
+     * @return email address that was used during transaction
+     */
+    default String getEmailUsed() {
+        return null;
+    }
+
+    /**
      * Indicates that sell transaction was withdrawn with 0-confirmation.
      * @return
      */
@@ -317,4 +338,40 @@ public interface ITransactionDetails {
      * @return Payment type: CASH/PAYMENT_CARD
      */
     String getPaymentType();
+
+    /**
+     * @return UUID of transaction.
+     */
+    String getUuid();
+
+    /**
+     * Returns the name of the crypto setting used for the transaction.
+     * @return Name of crypto setting used for the transaction.
+     */
+    String getNameOfCryptoSettingUsed();
+
+    /**
+     * @return Public ID of terminal location.
+     */
+    String getLocationPublicId();
+
+    /**
+     * Identity state at the time of the transaction.
+     * Returns <code>null</code> if identity wasn't available.
+     * @return int value representing identity state. See {@link IIdentityBase#getState()}
+     */
+    Integer getIdentityState();
+
+    /**
+     * Retrieves the blockchain transaction hashes associated with this transaction.
+     *
+     * <p>If the business-level transaction was executed across multiple on‑chain transactions,
+     * this method will return all corresponding hashes in a list.</p>
+     *
+     * <p>When multiple business-level transactions are batched together
+     * (for example, via an output queue), they may share the same hash.</p>
+     *
+     * @return a list of one or more blockchain transaction hashes, empty list if there are none
+     */
+    List<String> getTransactionHashes();
 }

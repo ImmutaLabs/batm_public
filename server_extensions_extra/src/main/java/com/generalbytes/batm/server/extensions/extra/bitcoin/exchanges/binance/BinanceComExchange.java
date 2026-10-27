@@ -56,18 +56,16 @@ public class BinanceComExchange extends BinanceExchange {
         SUPPORTED_CRYPTOS.add(new SupportedCryptoCurrency(CryptoCurrency.NULS.getCode()));
         SUPPORTED_CRYPTOS.add(new SupportedCryptoCurrency(CryptoCurrency.PAXG.getCode()));
         SUPPORTED_CRYPTOS.add(new SupportedCryptoCurrency(CryptoCurrency.REP.getCode()));
+        SUPPORTED_CRYPTOS.add(new SupportedCryptoCurrency(CryptoCurrency.SOL.getCode()));
         SUPPORTED_CRYPTOS.add(new SupportedCryptoCurrency(CryptoCurrency.SYS.getCode()));
         SUPPORTED_CRYPTOS.add(new SupportedCryptoCurrency(CryptoCurrency.TRX.getCode(), new BigDecimal("0.000001")));
         SUPPORTED_CRYPTOS.add(new SupportedCryptoCurrency(CryptoCurrency.USDS.getCode(), new BigDecimal("0.000001")));
         SUPPORTED_CRYPTOS.add(new SupportedCryptoCurrency(CryptoCurrency.USDT.getCode(), new BigDecimal("0.000001")));
+        SUPPORTED_CRYPTOS.add(new SupportedCryptoCurrency(CryptoCurrency.USDTTRON.getCode(), new BigDecimal("0.000001")));
         SUPPORTED_CRYPTOS.add(new SupportedCryptoCurrency(CryptoCurrency.VIA.getCode()));
         SUPPORTED_CRYPTOS.add(new SupportedCryptoCurrency(CryptoCurrency.XMR.getCode()));
         SUPPORTED_CRYPTOS.add(new SupportedCryptoCurrency(CryptoCurrency.XRP.getCode(), new BigDecimal("0.000001")));
         SUPPORTED_CRYPTOS.add(new SupportedCryptoCurrency(CryptoCurrency.XZC.getCode()));
-    }
-
-    public BinanceComExchange(String preferredFiatCurrency) {
-        super(preferredFiatCurrency, SSL_URI);
     }
 
     public BinanceComExchange(String key, String secret, String preferredFiatCurrency) {

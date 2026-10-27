@@ -37,12 +37,17 @@
                 <param name="wallet_id" />
                 <param name="wallet_passphrase" />
                 <param name="num_blocks" />
+                <param name="fee_rate" />
+                <param name="max_fee_rate" />
                 <cryptocurrency buyonly="true">BCH</cryptocurrency>
                 <cryptocurrency>BTC</cryptocurrency>
                 <cryptocurrency>LTC</cryptocurrency>
                 <cryptocurrency buyonly="true">ETH</cryptocurrency><!--BitGo’s Ethereum wallets are only available to BitGo Enterprise customers-->
                 <cryptocurrency>XRP</cryptocurrency><!-- BitGo Enterprise-->
                 <cryptocurrency buyonly="true">USDT</cryptocurrency>
+                <cryptocurrency buyonly="true">USDC</cryptocurrency>
+                <cryptocurrency buyonly="true">SOL</cryptocurrency>
+                <cryptocurrency buyonly="true">USDCSOL</cryptocurrency>
                 <help>Host should start with http:// or https://. num_blocks is an integer greater than 2.</help>
             </wallet>
             <wallet prefix="bitgonoforward" name="BitGo Wallet (no forward)">
@@ -54,6 +59,8 @@
                 <param name="wallet_id" />
                 <param name="wallet_passphrase" />
                 <param name="num_blocks" />
+                <param name="fee_rate" />
+                <param name="max_fee_rate" />
                 <cryptocurrency buyonly="true">BCH</cryptocurrency>
                 <cryptocurrency>BTC</cryptocurrency>
                 <cryptocurrency>LTC</cryptocurrency>
@@ -61,6 +68,9 @@
                 <cryptocurrency>XRP</cryptocurrency><!-- BitGo Enterprise-->
                 <cryptocurrency>USDT</cryptocurrency><!-- BitGo Enterprise-->
                 <cryptocurrency>USDTTRON</cryptocurrency>
+                <cryptocurrency>USDC</cryptocurrency>
+                <cryptocurrency>SOL</cryptocurrency>
+                <cryptocurrency>USDCSOL</cryptocurrency>
                 <help>This variant of the wallet generates new addresses for each sell transaction and does not forward payments from temporary address. Host should start with http:// or https://. num_blocks is an integer greater than 2.</help>
             </wallet>
             <wallet prefix="cryptx" name="CryptX Wallet System">
@@ -77,7 +87,9 @@
                 <cryptocurrency>BTC</cryptocurrency>
                 <cryptocurrency>LTC</cryptocurrency>
                 <cryptocurrency>ETH</cryptocurrency>
+                <cryptocurrency>TRX</cryptocurrency>
                 <cryptocurrency>USDT</cryptocurrency>
+                <cryptocurrency>USDTTRON</cryptocurrency>
                 <help>
                     *host: https://api.walletpro.cryptal.com/ (required) -
                     port: (not required) -
@@ -102,7 +114,10 @@
                 <cryptocurrency>BTC</cryptocurrency>
                 <cryptocurrency>LTC</cryptocurrency>
                 <cryptocurrency>ETH</cryptocurrency>
+                <cryptocurrency>TRX</cryptocurrency>
                 <cryptocurrency>USDT</cryptocurrency>
+                <cryptocurrency>USDC</cryptocurrency>
+                <cryptocurrency>USDTTRON</cryptocurrency>
                 <help>
                     *host: https://api.walletpro.cryptal.com/ (required) -
                     port: (not required) -
@@ -168,16 +183,6 @@
                 <cryptocurrency>ETH</cryptocurrency>
                 <cryptocurrency>LTC</cryptocurrency>
                 <cryptocurrency>XRP</cryptocurrency>
-            </ratesource>
-            <ratesource prefix="bittrex" name ="Bittrex.com Exchange" >
-                <param name="fiatcurrency"/>
-                <cryptocurrency>BTC</cryptocurrency>
-                <cryptocurrency>ETH</cryptocurrency>
-                <cryptocurrency>LTC</cryptocurrency>
-                <cryptocurrency>BAY</cryptocurrency>
-                <cryptocurrency>BTBS</cryptocurrency>
-                <cryptocurrency>GQ</cryptocurrency>
-                <help>The parameter is optional (the only supported fiat currency is USDT).</help>
             </ratesource>
             <ratesource prefix="coinmarketcap" name ="CoinMarketCap.com" >
                 <param name="fiatcurrency" />
@@ -310,6 +315,14 @@
                 <param name="fiatcurrency" />
                 <cryptocurrency>BTC</cryptocurrency>
             </ratesource>
+            <ratesource prefix="okx" name="OKX Exchange" >
+                <param name="fiatcurrency" />
+                <cryptocurrency>BTC</cryptocurrency>
+                <cryptocurrency>DOGE</cryptocurrency>
+                <cryptocurrency>ETH</cryptocurrency>
+                <cryptocurrency>LTC</cryptocurrency>
+                <cryptocurrency>USDT</cryptocurrency>
+            </ratesource>
             <exchange prefix="bitflyer" name="BitFlyer.jp Exchange">
                 <param name="fiatcurrency" />
                 <param name="key" />
@@ -342,6 +355,7 @@
                 <cryptocurrency>BCH</cryptocurrency>
                 <cryptocurrency>DASH</cryptocurrency>
                 <cryptocurrency>XMR</cryptocurrency>
+                <cryptocurrency buyonly="true">L-BTC</cryptocurrency>
             </exchange>
             <exchange prefix="bitstamp" name="Bitstamp.net Exchange">
                 <param name="fiatcurrency" />
@@ -353,17 +367,6 @@
                 <cryptocurrency buyonly="true">ETH</cryptocurrency>
                 <cryptocurrency>LTC</cryptocurrency>
                 <cryptocurrency>XRP</cryptocurrency>
-            </exchange>
-            <exchange prefix="bittrex" name="Bittrex.com Exchange">
-                <param name="apikey" />
-                <param name="apisecret" />
-                <cryptocurrency>BTC</cryptocurrency>
-                <cryptocurrency>BCH</cryptocurrency>
-                <cryptocurrency buyonly="true">ETH</cryptocurrency>
-                <cryptocurrency>LTC</cryptocurrency>
-                <cryptocurrency>BAY</cryptocurrency>
-                <cryptocurrency>BTBS</cryptocurrency>
-                <cryptocurrency>GQ</cryptocurrency>
             </exchange>
             <exchange prefix="dvchain" name="DV Chain Exchange">
                 <param name="secretKey" />
@@ -405,9 +408,10 @@
             <cryptocurrency>DAI</cryptocurrency>
             <cryptocurrency>BIZZ</cryptocurrency>
             <cryptocurrency>XRP</cryptocurrency>
+            <cryptocurrency>SOL</cryptocurrency>
             <help>fiatcurrency parameter is optional</help>
         </ratesource>
-        <wallet prefix="coinbasewallet2" name="Coinbase.com Wallet" >
+        <wallet prefix="coinbasewallet2" name="Coinbase.com Wallet [Deprecated]" >
             <param name="apikey" />
             <param name="secretkey" />
             <param name="accountname" />
@@ -424,7 +428,25 @@
             <cryptocurrency>XRP</cryptocurrency>
             <help>accountname parameter is optional</help>
         </wallet>
-        <wallet prefix="coinbasewallet2noforward" name="Coinbase.com Wallet (no forward)" >
+        <wallet prefix="coinbasewallet3" name="Coinbase.com Wallet" >
+            <param name="privatekey" />
+            <param name="keyname" />
+            <param name="accountname" />
+            <cryptocurrency>ADA</cryptocurrency>
+            <cryptocurrency>BAT</cryptocurrency>
+            <cryptocurrency buyonly="true">BCH</cryptocurrency>
+            <cryptocurrency>BTC</cryptocurrency>
+            <cryptocurrency>DASH</cryptocurrency>
+            <cryptocurrency buyonly="true">ETC</cryptocurrency>
+            <cryptocurrency buyonly="true">ETH</cryptocurrency>
+            <cryptocurrency buyonly="true">USDT</cryptocurrency>
+            <cryptocurrency buyonly="true">USDC</cryptocurrency>
+            <cryptocurrency>LTC</cryptocurrency>
+            <cryptocurrency>XRP</cryptocurrency>
+            <cryptocurrency buyonly="true">SOL</cryptocurrency>
+            <help>accountname parameter is optional</help>
+        </wallet>
+        <wallet prefix="coinbasewallet2noforward" name="Coinbase.com Wallet (no forward) [Deprecated]" >
             <param name="apikey" />
             <param name="secretkey" />
             <param name="accountname" />
@@ -442,7 +464,36 @@
             <cryptocurrency>XRP</cryptocurrency>
             <help>accountname parameter is optional. This variant of the wallet generates new addresses for each transaction and does not forward payments from temporary address</help>
         </wallet>
-        <exchange prefix="coinbaseexchange" name="Coinbase.com Exchange">
+        <wallet prefix="coinbasewallet3noforward" name="Coinbase.com Wallet (no forward)" >
+            <param name="privatekey" />
+            <param name="keyname" />
+            <param name="accountname" />
+            <cryptocurrency>ADA</cryptocurrency>
+            <cryptocurrency>BAT</cryptocurrency>
+            <cryptocurrency buyonly="true">BCH</cryptocurrency>
+            <cryptocurrency>BTC</cryptocurrency>
+            <cryptocurrency>DAI</cryptocurrency>
+            <cryptocurrency>BIZZ</cryptocurrency>
+            <cryptocurrency>ETC</cryptocurrency>
+            <cryptocurrency>ETH</cryptocurrency>
+            <cryptocurrency>USDT</cryptocurrency>
+            <cryptocurrency>USDC</cryptocurrency>
+            <cryptocurrency>LTC</cryptocurrency>
+            <cryptocurrency>XRP</cryptocurrency>
+            <cryptocurrency buyonly="true">SOL</cryptocurrency>
+            <help>accountname parameter is optional. This variant of the wallet generates new addresses for each transaction and does not forward payments from temporary address</help>
+        </wallet>
+        <wallet prefix="bnbdemo" name="BNB Demo Wallet">
+            <param name="fiatCurrency" />
+            <param name="walletAddress" />
+            <cryptocurrency>BNB</cryptocurrency>
+        </wallet>
+        <exchange prefix="bnbdemo" name="BNB Demo Exchange">
+            <param name="fiatCurrency" />
+            <param name="walletAddress" />
+            <cryptocurrency>BNB</cryptocurrency>
+        </exchange>
+        <exchange prefix="coinbaseexchange" name="Coinbase.com Exchange [Deprecated]">
             <param name="apikey" />
             <param name="secretkey" />
             <param name="accountname" />
@@ -457,16 +508,21 @@
             <cryptocurrency>BAT</cryptocurrency>
             <help>fiatcurrency,paymentmethod are optional</help>
         </exchange>
-        <exchange prefix="coinbasepro" name="Coinbase Pro">
-            <param name="key"/>
-            <param name="secret"/>
-            <param name="passphrase"/>
+        <exchange prefix="coinbaseexchange2" name="Coinbase.com Exchange">
+            <param name="privatekey" />
+            <param name="keyname" />
+            <param name="accountname" />
             <param name="fiatcurrency" />
+            <param name="paymentmethod" />
             <cryptocurrency>ADA</cryptocurrency>
             <cryptocurrency>BCH</cryptocurrency>
             <cryptocurrency>BTC</cryptocurrency>
+            <cryptocurrency buyonly="true">ETC</cryptocurrency>
             <cryptocurrency buyonly="true">ETH</cryptocurrency>
             <cryptocurrency>LTC</cryptocurrency>
+            <cryptocurrency>BAT</cryptocurrency>
+            <cryptocurrency buyonly="true">SOL</cryptocurrency>
+            <help>fiatcurrency,paymentmethod are optional</help>
         </exchange>
         <exchange prefix="poloniex" name="Poloniex">
             <param name="key"/>
@@ -491,15 +547,6 @@
             <cryptocurrency>XRP</cryptocurrency>
             <cryptocurrency>XPM</cryptocurrency>
         </exchange>
-        <ratesource prefix="coinbasepro" name="Coinbase Pro">
-            <param name="fiatcurrency" />
-            <cryptocurrency>ADA</cryptocurrency>
-            <cryptocurrency>BCH</cryptocurrency>
-            <cryptocurrency>BTC</cryptocurrency>
-            <cryptocurrency>ETH</cryptocurrency>
-            <cryptocurrency>LTC</cryptocurrency>
-            <cryptocurrency>XRP</cryptocurrency>
-        </ratesource>
         <ratesource prefix="poloniex" name="Poloniex">
             <param name="fiatcurrency" />
             <cryptocurrency>BCH</cryptocurrency>
@@ -521,20 +568,6 @@
             <cryptocurrency>XRP</cryptocurrency>
             <cryptocurrency>XPM</cryptocurrency>
         </ratesource>
-        <exchange prefix="coingi" name="Coingi.com">
-            <param name="key"/>
-            <param name="privatekey"/>
-            <param name="fiatcurrency"/>
-            <cryptocurrency>BTC</cryptocurrency>
-            <cryptocurrency>DOGE</cryptocurrency>
-            <cryptocurrency>LTC</cryptocurrency>
-        </exchange>
-        <ratesource prefix="coingi" name="Coingi.com">
-            <param name="fiatcurrency" />
-            <cryptocurrency>BTC</cryptocurrency>
-            <cryptocurrency>DOGE</cryptocurrency>
-            <cryptocurrency>LTC</cryptocurrency>
-        </ratesource>
         <exchange prefix="enigma" name="Enigma-Securities.com">
             <param name="username"/>
             <param name="password"/>
@@ -551,6 +584,8 @@
         </ratesource>
         <ratesource prefix="coingecko" name ="CoinGecko.com" >
             <param name="fiatcurrency" />
+            <param name="apiKey" />
+            <help>To use the CoinGecko Pro API (paid plan), configure the apiKey, otherwise leave blank. The fiatcurrency property defaults to USD</help>
             <cryptocurrency>ANON</cryptocurrency>
             <cryptocurrency>ANT</cryptocurrency>
             <cryptocurrency>BAT</cryptocurrency>
@@ -707,13 +742,17 @@
             <cryptocurrency>TRX</cryptocurrency>
             <cryptocurrency>USDS</cryptocurrency>
             <cryptocurrency buyonly="true">USDT</cryptocurrency>
+            <cryptocurrency buyonly="true">USDTTRON</cryptocurrency>
             <cryptocurrency>VIA</cryptocurrency>
             <cryptocurrency>XMR</cryptocurrency>
             <cryptocurrency>XRP</cryptocurrency>
             <cryptocurrency>XZC</cryptocurrency>
+            <cryptocurrency buyonly="true">SOL</cryptocurrency>
         </exchange>
         <ratesource prefix="binancecom" name="Binance.com">
-            <param name="fiatcurrency" />
+            <param name="apikey"/>
+            <param name="secretkey"/>
+            <param name="fiatcurrency"/>
             <cryptocurrency>BAT</cryptocurrency>
             <cryptocurrency>BCH</cryptocurrency>
             <cryptocurrency>BNB</cryptocurrency>
@@ -737,6 +776,7 @@
             <cryptocurrency>XMR</cryptocurrency>
             <cryptocurrency>XRP</cryptocurrency>
             <cryptocurrency>XZC</cryptocurrency>
+            <cryptocurrency>SOL</cryptocurrency>
         </ratesource>
         <exchange prefix="binanceus" name="Binance US">
             <param name="apikey"/>
@@ -814,6 +854,19 @@
             <cryptocurrency>BTC</cryptocurrency>
             <cryptocurrency>ETH</cryptocurrency>
             <cryptocurrency>LTC</cryptocurrency>
+        </ratesource>
+        <exchange prefix="stillmandigital" name="Stillman Digital">
+            <param name="apikey" />
+            <param name="apisecret" />
+            <cryptocurrency buyonly="true">BTC</cryptocurrency>
+            <cryptocurrency buyonly="true">ETH</cryptocurrency>
+            <help>https://www.stillmandigital.com</help>
+        </exchange>
+        <ratesource prefix="stillmandigital" name="Stillman Digital">
+            <param name="apikey" />
+            <param name="apisecret" />
+            <cryptocurrency buyonly="true">BTC</cryptocurrency>
+            <cryptocurrency buyonly="true">ETH</cryptocurrency>
         </ratesource>
         <cryptologo cryptocurrency="BNB" file="bnb.png"/>
         <cryptologo cryptocurrency="BNB" file="bnb.svg"/>
@@ -928,6 +981,11 @@
         </ratesource>
         <cryptologo cryptocurrency="DOGE" file="doge.png"/>
         <cryptologo cryptocurrency="DOGE" file="doge.svg"/>
+        <exchange prefix="dogedemo" name="Dogecoin Demo Exchange">
+            <param name="fiatCurrency" />
+            <param name="exchangeAddress" />
+            <cryptocurrency>DOGE</cryptocurrency>
+        </exchange>
     </extension>
     <extension class="com.generalbytes.batm.server.extensions.extra.newyorkcoin.NewyorkcoinExtension" >
         <wallet prefix="newyorkcoind" name="Newyorkcoind">
@@ -1079,6 +1137,22 @@
         </wallet>
         <cryptologo cryptocurrency="LBTC" file="lbtc.png"/>
         <cryptologo cryptocurrency="LBTC" file="lbtc.svg"/>
+    </extension>
+    <extension class="com.generalbytes.batm.server.extensions.extra.liquidbitcoin.LiquidBitcoinExtension" >
+        <wallet prefix="elementsdbtcnoforward" name="Liquid Network Bitcoin - Elements Core" >
+            <tunnel supported="true"/>
+            <sendtomany supported="true"/>
+            <param name="protocol" />
+            <param name="user" />
+            <param name="password" />
+            <param name="host" />
+            <param name="port" />
+            <param name="wallet" />
+            <cryptocurrency>L-BTC</cryptocurrency>
+            <help>This variant of the wallet generates new addresses for each transaction and does not forward payments from temporary address</help>
+        </wallet>
+        <cryptologo cryptocurrency="L-BTC" file="l_btc.png"/>
+        <cryptologo cryptocurrency="L-BTC" file="l_btc.svg"/>
     </extension>
     <extension class="com.generalbytes.batm.server.extensions.extra.bitbay.BitbayCoinExtension" >
         <wallet prefix="bitbayd" name="bitbayd">
@@ -1560,6 +1634,11 @@
             <param name="walletAddress" />
             <cryptocurrency>XRP</cryptocurrency>
         </wallet>
+        <exchange prefix="xrpdemo" name="Ripple Demo Exchange">
+            <param name="fiatCurrency" />
+            <param name="walletAddress" />
+            <cryptocurrency>XRP</cryptocurrency>
+        </exchange>
         <ratesource prefix="xrpfix" name ="Fix Price" >
             <param name="price" />
             <cryptocurrency>XRP</cryptocurrency>
@@ -1582,6 +1661,17 @@
             <param name="price" />
             <param name="fiatcurrency" />
             <cryptocurrency>DEX</cryptocurrency>
+        </exchange>
+        <exchange prefix="okx" name="OKX Exchange">
+            <param name="apikey" />
+            <param name="secretkey" />
+            <param name="passphrase" />
+            <param name="fiatcurrency" />
+            <cryptocurrency buyonly="true">BTC</cryptocurrency>
+            <cryptocurrency buyonly="true">DOGE</cryptocurrency>
+            <cryptocurrency buyonly="true">ETH</cryptocurrency>
+            <cryptocurrency buyonly="true">LTC</cryptocurrency>
+            <cryptocurrency buyonly="true">USDT</cryptocurrency>
         </exchange>
         <cryptologo cryptocurrency="DEX" file="dex.png"/>
     </extension>
@@ -1947,8 +2037,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency buyonly="true">DAI</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="DAI" file="dai.png"/>
@@ -1959,8 +2048,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency buyonly="true">BIZZ</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="BIZZ" file="bizz.png"/>
@@ -1970,8 +2058,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>BTBS</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="BTBS" file="btbs.png"/>
@@ -1980,8 +2067,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>GQ</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="GQ" file="gq.png"/>
@@ -1990,8 +2076,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>MKR</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="MKR" file="mkr.png"/>
@@ -2000,8 +2085,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>BAT</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="BAT" file="bat.png"/>
@@ -2010,8 +2094,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>REP</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="REP" file="rep.png"/>
@@ -2020,8 +2103,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>JOB</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="JOB" file="jobchain.png"/>
@@ -2030,8 +2112,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>LMY</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="LMY" file="lunchmoney.png"/>
@@ -2040,8 +2121,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>ANT</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="ANT" file="ant.png"/>
@@ -2050,8 +2130,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>HBX</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="HBX" file="hbx.svg"/>
@@ -2059,8 +2138,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>VOLTZ</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="VOLTZ" file="voltz.svg"/>
@@ -2068,8 +2146,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>THBX</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="THBX" file="thbx.svg"/>
@@ -2077,8 +2154,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>MUSD</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="MUSD" file="musd.svg"/>
@@ -2098,8 +2174,7 @@
           <param name="projectId" />
           <param name="mnemonic" />
           <param name="gaslimit" />
-          <param name="gasPriceMultiplier" />
-          <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+          <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
           <cryptocurrency>USDS</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="USDS" file="usds.png"/>
@@ -2108,8 +2183,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>HT</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="HT" file="ht.png"/>
@@ -2118,8 +2192,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>ZPAE</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="ZPAE" file="zpae.png"/>
@@ -2128,8 +2201,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency buyonly="true">USDT</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="USDT" file="usdt.png"/>
@@ -2138,8 +2210,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>WILC</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="WILC" file="wilc.png"/>
@@ -2148,8 +2219,7 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency>PAXG</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="PAXG" file="paxg.png"/>
@@ -2158,15 +2228,57 @@
             <param name="projectId" />
             <param name="mnemonic" />
             <param name="gaslimit" />
-            <param name="gasPriceMultiplier" />
-            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional. gasPriceMultiplier (optional) is used to multiply the estimated gas price, e.g. "1.1" for higher priority or "0.9" for lower.</help>
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
             <cryptocurrency buyonly="true">USDC</cryptocurrency>
         </wallet>
         <cryptologo cryptocurrency="USDC" file="usdc.png"/>
         <cryptologo cryptocurrency="USDC" file="usdc.svg"/>
+        <wallet prefix="usdcdemo" name="USDC Demo Wallet">
+            <param name="fiatCurrency"/>
+            <param name="walletAddress"/>
+            <cryptocurrency>USDC</cryptocurrency>
+        </wallet>
+        <exchange prefix="usdcdemo" name="USDC Demo Exchange">
+            <param name="fiatCurrency"/>
+            <param name="walletAddress"/>
+            <cryptocurrency>USDC</cryptocurrency>
+        </exchange>
+        <wallet prefix="usdtdemo" name="USDT Demo Wallet">
+            <param name="fiatCurrency"/>
+            <param name="walletAddress"/>
+            <cryptocurrency>USDT</cryptocurrency>
+        </wallet>
+        <exchange prefix="usdtdemo" name="USDT Demo Exchange">
+            <param name="fiatCurrency"/>
+            <param name="walletAddress"/>
+            <cryptocurrency>USDT</cryptocurrency>
+        </exchange>
+        <cryptologo cryptocurrency="QCAD" file="qcad.png"/>
+        <wallet prefix="qcaddemo" name="QCAD Demo Wallet">
+            <param name="fiat_currency"/>
+            <param name="wallet_address"/>
+            <cryptocurrency buyonly="true">QCAD</cryptocurrency>
+        </wallet>
+        <exchange prefix="qcaddemo" name="QCAD Demo Exchange">
+            <param name="fiat_currency"/>
+            <param name="wallet_address"/>
+            <cryptocurrency buyonly="true">QCAD</cryptocurrency>
+        </exchange>
+        <ratesource prefix="qcadfix" name="Fix Price">
+            <param name="price"/>
+            <param name="fiat_currency"/>
+            <cryptocurrency>QCAD</cryptocurrency>
+            <help>USD is default fiat currency.</help>
+        </ratesource>
+        <wallet prefix="infuraERC20_QCAD_6_0x3Fa142dD3f384414e05E71Ad0939274EdC82EC0A" name="Infura.io wallet - QCAD">
+            <param name="projectId" />
+            <param name="mnemonic" />
+            <param name="gaslimit" />
+            <help>Mnemonic should be 24 words delimited by spaces. gaslimit is optional.</help>
+            <cryptocurrency buyonly="true">QCAD</cryptocurrency>
+        </wallet>
         <!-- ADD your ERC20 tokens here. And don't forget to add cryptologos. -->
     </extension>
-    <extension class="com.generalbytes.batm.server.extensions.extra.examples.chat.ChatBotExtensionExample" />
     <extension class="com.generalbytes.batm.server.extensions.extra.nuls.NulsExtension" >
         <wallet prefix="nulsBinance" name="NULS">
             <param name="address" />
@@ -2290,7 +2402,7 @@
         <cryptologo cryptocurrency="ADA" file="cardano_ada.svg"/>
     </extension>
     <extension class="com.generalbytes.batm.server.extensions.extra.tron.TronExtension">
-        <wallet prefix="tridentTRC20_USDTTRON_6_TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t" name="Tron TRC20 Trident wallet - USDT">
+        <wallet prefix="tridentTRC20_USDTTRON_6_TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t" name="TRON TRC-20 TronGrid.io">
             <param name="apikey"/>
             <param name="privatekey"/>
             <param name="feeLimit"/>
@@ -2302,6 +2414,11 @@
             <param name="walletAddress" />
             <cryptocurrency>USDTTRON</cryptocurrency>
         </wallet>
+        <exchange prefix="usdttrondemo" name="Demo Exchange">
+            <param name="fiatCurrency"/>
+            <param name="walletAddress"/>
+            <cryptocurrency>USDTTRON</cryptocurrency>
+        </exchange>
         <cryptologo cryptocurrency="USDTTRON" file="usdttron.png"/>
         <cryptologo cryptocurrency="USDTTRON" file="usdttron.svg"/>
     </extension>
@@ -2353,16 +2470,45 @@
             <param sensitive="false" name="Onfido region" help="'EU', 'US' or 'CA'. Default: 'EU'."/>
         </identityverificationprovider>
     </extension>
-
-    <extension autoload="false" class="com.generalbytes.batm.server.extensions.extra.examples.notification.NotificationExampleExtension" />
-    <extension autoload="false" class="com.generalbytes.batm.server.extensions.extra.examples.TransactionExtension" />
-    <extension autoload="false" class="com.generalbytes.batm.server.extensions.extra.examples.ProfitOverrideExtension" />
-    <extension autoload="false" class="com.generalbytes.batm.server.extensions.extra.examples.identity.IdentityExampleExtension" />
-    <extension autoload="false" class="com.generalbytes.batm.server.extensions.extra.examples.location.LocationExampleExtension" />
-    <extension autoload="false" class="com.generalbytes.batm.server.extensions.extra.examples.identity.ExternalIdentityExampleExtension" />
-    <extension autoload="false" class="com.generalbytes.batm.server.extensions.extra.watchlists.WatchlistExtension" />
-    <extension autoload="false" class="com.generalbytes.batm.server.extensions.extra.examples.rest.RESTExampleExtension" />
-    <extension autoload="false" class="com.generalbytes.batm.server.extensions.extra.examples.communication.ExternalCommunicationExampleExtension" />
-    <extension autoload="false" class="com.generalbytes.batm.server.extensions.extra.examples.activeTerminals.ActiveTerminalsExtension" />
-
+    <extension class="com.generalbytes.batm.server.extensions.extra.identityverification.sumsub.SumSubExtension">
+        <identityverificationprovider prefix="gbsumsub" name="Sum &amp; Substance by GB and LC" help="">
+            <param sensitive="false" name="Token" help=""/>
+            <param sensitive="true" name="Secret Key" help=""/>
+            <param sensitive="true" name="Webhook Secret Key" help="The secret key of the webhook created for the BATM server"/>
+            <param sensitive="false" name="Applicant Level Name" help="Starting verification level. See more at https://docs.sumsub.com/docs/verification-levels"/>
+            <param sensitive="false" name="Applicant Link Expiry Time in Seconds" help="If not set, default is 7 days"/>
+        </identityverificationprovider>
+    </extension>
+    <extension class="com.generalbytes.batm.server.extensions.travelrule.notabene.NotabeneExtension" />
+    <extension class="com.generalbytes.batm.server.extensions.travelrule.gtr.GtrExtension" />
+    <extension class="com.generalbytes.batm.server.extensions.travelrule.sumsub.SumsubTravelRuleExtension" />
+    <extension class="com.generalbytes.batm.server.extensions.extra.communication.ExternalCommunicationExtension" />
+    <extension class="com.generalbytes.batm.server.extensions.extra.solana.SolanaExtension" >
+        <wallet prefix="soldemo" name="Solana Demo Wallet">
+            <param name="fiat_currency" />
+            <param name="wallet_address" />
+            <cryptocurrency buyonly="true">SOL</cryptocurrency>
+        </wallet>
+        <wallet prefix="usdcsoldemo" name="USDC (Solana) Demo Wallet">
+            <param name="fiat_currency" />
+            <param name="wallet_address" />
+            <cryptocurrency buyonly="true">USDCSOL</cryptocurrency>
+        </wallet>
+        <ratesource prefix="solfix" name ="Fix Price" >
+            <param name="price" />
+            <param name="fiat_currency" />
+            <cryptocurrency>SOL</cryptocurrency>
+            <help>USD is default fiat currency.</help>
+        </ratesource>
+        <ratesource prefix="usdcsolfix" name ="Fix Price" >
+            <param name="price" />
+            <param name="fiat_currency" />
+            <cryptocurrency>USDCSOL</cryptocurrency>
+            <help>USD is default fiat currency.</help>
+        </ratesource>
+        <cryptologo cryptocurrency="SOL" file="sol.png"/>
+        <cryptologo cryptocurrency="SOL" file="sol.svg"/>
+        <cryptologo cryptocurrency="USDCSOL" file="usdcsol.png"/>
+        <cryptologo cryptocurrency="USDCSOL" file="usdcsol.svg"/>
+    </extension>
 </extensions>

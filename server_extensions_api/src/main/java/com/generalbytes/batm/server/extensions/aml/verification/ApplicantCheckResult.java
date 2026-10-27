@@ -13,6 +13,11 @@ public class ApplicantCheckResult {
 
     private CheckResult result;
 
+    /**
+     * Can contain additional details for the decision result.
+     */
+    private String resultReason;
+
     private String firstName;
 
     private String lastName;
@@ -20,6 +25,8 @@ public class ApplicantCheckResult {
     private DocumentType documentType;
 
     private String documentNumber;
+
+    private String secondaryDocumentNumber;
 
     private Date expirationDate;
 
@@ -35,10 +42,17 @@ public class ApplicantCheckResult {
 
     private String state;
 
+    private String email;
+
     /**
      * ISO 3166 Alpha-3 code
      */
     private String country;
+
+    /**
+     * Taxpayer Identification Number, country-neutral (e.g. TFN, DIC/ICO, SSN/EIN/ITIN).
+     */
+    private String tin;
 
     public String getCheckId() {
         return checkId;
@@ -72,6 +86,14 @@ public class ApplicantCheckResult {
         this.result = result;
     }
 
+    public String getResultReason() {
+        return resultReason;
+    }
+
+    public void setResultReason(String resultReason) {
+        this.resultReason = resultReason;
+    }
+
     public String getFirstName() {
         return firstName;
     }
@@ -102,6 +124,14 @@ public class ApplicantCheckResult {
 
     public void setDocumentNumber(String documentNumber) {
         this.documentNumber = documentNumber;
+    }
+
+    public String getSecondaryDocumentNumber() {
+        return secondaryDocumentNumber;
+    }
+
+    public void setSecondaryDocumentNumber(String secondaryDocumentNumber) {
+        this.secondaryDocumentNumber = secondaryDocumentNumber;
     }
 
     public Date getExpirationDate() {
@@ -160,11 +190,27 @@ public class ApplicantCheckResult {
         this.state = state;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     public String getCountry() {
         return country;
     }
 
     public void setCountry(String country) {
         this.country = country;
+    }
+
+    public String getTin() {
+        return tin;
+    }
+
+    public void setTin(String tin) {
+        this.tin = tin;
     }
 }

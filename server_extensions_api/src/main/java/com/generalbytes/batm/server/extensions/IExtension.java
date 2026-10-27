@@ -1,5 +1,5 @@
 /*************************************************************************************
- * Copyright (C) 2014-2020 GENERAL BYTES s.r.o. All rights reserved.
+ * Copyright (C) 2014-2024 GENERAL BYTES s.r.o. All rights reserved.
  *
  * This software may be distributed and modified under the terms of the GNU
  * General Public License version 2 (GPL2) as published by the Free Software
@@ -24,8 +24,14 @@ import com.generalbytes.batm.server.extensions.aml.scoring.ITransactionScoringPr
 import com.generalbytes.batm.server.extensions.aml.verification.IIdentityVerificationProvider;
 import com.generalbytes.batm.server.extensions.communication.ICommunicationProvider;
 import com.generalbytes.batm.server.extensions.communication.IPhoneLookupProvider;
+import com.generalbytes.batm.server.extensions.communication.voicecall.IVoiceCallProvider;
+import com.generalbytes.batm.server.extensions.payment.external.IExternalPaymentProvider;
+import com.generalbytes.batm.server.extensions.travelrule.ITravelRuleProvider;
+import com.generalbytes.batm.server.extensions.travelrule.ITravelRuleProviderFactory;
+import com.generalbytes.batm.server.extensions.travelrule.IWalletTypeEvaluationProvider;
 import com.generalbytes.batm.server.extensions.watchlist.IWatchList;
 
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -80,6 +86,15 @@ public interface IExtension {
      * @see com.generalbytes.batm.server.extensions.IPaymentProcessor
      */
     IPaymentProcessor createPaymentProcessor(String paymentProcessorLogin);
+
+    /**
+     * This method is used for creating implementation of an external payment provider
+     *
+     * @see com.generalbytes.batm.server.extensions.payment.external.IExternalPaymentProvider
+     */
+    default IExternalPaymentProvider createExternalPaymentProvider() {
+        return null;
+    }
 
     /**
      * This method is used for creating implementation of coin price source
@@ -174,10 +189,27 @@ public interface IExtension {
     ITransactionScoringProvider createTransactionScoringProvider(String transactionScoringProviderParamValues);
 
     /**
-     * Optionally returns external communication providers that can be used by server to sending SMS or making voice calls.
+     * Optionally returns external communication providers that can be used by server to sending SMS.
      * @return
      */
     Set<ICommunicationProvider> getCommunicationProviders();
+
+    /**
+     * Optionally returns external communication providers that can be used by server to making voice call.
+     * @return
+     */
+    Set<IVoiceCallProvider> getVoiceCallProviders();
+
+    /**
+     * Returns the list of all Travel Rule Provider Factories.
+     * <p>
+     * Each factory is responsible for creating instance of {@link ITravelRuleProvider} based on the implementation.
+     *
+     * @return Set of all Travel Rule Provider Factories.
+     */
+    default Set<ITravelRuleProviderFactory> getTravelRuleProviderFactories() {
+        return Collections.emptySet();
+    }
 
     /**
      * @return Validators that can be used to validate SSNs
@@ -193,5 +225,23 @@ public interface IExtension {
      */
 
     IIdentityVerificationProvider createIdentityVerificationProvider(String colonDelimitedParameters, String gbApiKey);
+
+    /**
+     * Get wallet type evaluation providers.
+     *
+     * @return Set of wallet type evaluation providers.
+     * @see IWalletTypeEvaluationProvider
+     */
+    Set<IWalletTypeEvaluationProvider> getWalletTypeEvaluationProviders();
+
+    /**
+     * Get fiat exchange rate providers.
+     *
+     * @return Set of fiat exchange rate providers.
+     * @see IFiatExchangeRateProvider
+     */
+    default Set<IFiatExchangeRateProvider> getFiatExchangeRateProviders() {
+        return Collections.emptySet();
+    }
 
 }

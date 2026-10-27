@@ -1,3 +1,20 @@
+/*************************************************************************************
+ * Copyright (C) 2014-2024 GENERAL BYTES s.r.o. All rights reserved.
+ *
+ * This software may be distributed and modified under the terms of the GNU
+ * General Public License version 2 (GPL2) as published by the Free Software
+ * Foundation and appearing in the file GPL2.TXT included in the packaging of
+ * this file. Please note that GPL2 Section 2[b] requires that all works based
+ * on this software must also be made publicly available under the terms of
+ * the GPL2 ("Copyleft").
+ *
+ * Contact information
+ * -------------------
+ *
+ * GENERAL BYTES s.r.o.
+ * Web      :  http://www.generalbytes.com
+ *
+ ************************************************************************************/
 package com.generalbytes.batm.server.extensions;
 
 import com.generalbytes.batm.server.extensions.aml.verification.ApplicantCheckResult;
@@ -24,6 +41,16 @@ import java.util.Map;
 import java.util.Set;
 
 public class TestExtensionContext implements IExtensionContext {
+    @Override
+    public void addApplicationListener(IApplicationListener listener) {
+
+    }
+
+    @Override
+    public boolean removeApplicationListener(IApplicationListener listener) {
+        return false;
+    }
+
     @Override
     public void addTransactionListener(ITransactionListener listener) {
 
@@ -179,6 +206,11 @@ public class TestExtensionContext implements IExtensionContext {
 
     @Override
     public boolean addIdentityPiece(String identityPublicId, IIdentityPiece iidentityPiece) {
+        return false;
+    }
+
+    @Override
+    public boolean updateIdentityPiecePersonalInfo(String identityPublicId, IIdentityPiece identityPiece) {
         return false;
     }
 
@@ -470,5 +502,19 @@ public class TestExtensionContext implements IExtensionContext {
     @Override
     public void markTransactionAsWithdrawn(String remoteOrLocalTransactionId) {
 
+    }
+
+    @Override
+    public void unlockTransaction(String rid, Date serverTimeToUnlock) {
+    }
+
+    @Override
+    public ReceiptData getReceiptData(ReceiptTransferMethod receiptTransferMethod, ITransactionDetails transactionDetails, String template) {
+        return null;
+    }
+
+    @Override
+    public ITransactionDetails addTransactionHash(String transactionRemoteId, String transactionHash) {
+        return null;
     }
 }

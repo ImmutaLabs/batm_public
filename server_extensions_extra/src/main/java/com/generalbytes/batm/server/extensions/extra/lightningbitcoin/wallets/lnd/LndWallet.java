@@ -17,6 +17,7 @@
  ************************************************************************************/
 package com.generalbytes.batm.server.extensions.extra.lightningbitcoin.wallets.lnd;
 
+import com.generalbytes.batm.server.coinutil.CoinUnit;
 import com.generalbytes.batm.server.extensions.ILightningChannel;
 import com.generalbytes.batm.server.extensions.ThrowingSupplier;
 import com.generalbytes.batm.server.extensions.extra.lightningbitcoin.wallets.AbstractLightningWallet;
@@ -26,7 +27,7 @@ import com.generalbytes.batm.server.extensions.extra.lightningbitcoin.wallets.ln
 import com.generalbytes.batm.server.extensions.extra.lightningbitcoin.wallets.lnd.dto.Payment;
 import com.generalbytes.batm.server.extensions.extra.lightningbitcoin.wallets.lnd.dto.PaymentRequest;
 import com.generalbytes.batm.server.extensions.extra.lightningbitcoin.wallets.lnd.dto.SendPaymentResponse;
-import com.generalbytes.batm.server.coinutil.CoinUnit;
+import com.generalbytes.batm.server.extensions.payment.ReceivedAmount;
 import com.generalbytes.batm.server.extensions.util.net.HexStringCertTrustManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,11 +35,12 @@ import si.mazi.rescu.ClientConfig;
 import si.mazi.rescu.HttpStatusIOException;
 import si.mazi.rescu.RestProxyFactory;
 
-import javax.ws.rs.HeaderParam;
+import jakarta.ws.rs.HeaderParam;
 import java.math.BigDecimal;
 import java.net.ConnectException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -61,7 +63,7 @@ public class LndWallet extends AbstractLightningWallet {
         this.feeLimit = feeLimit;
         final ClientConfig config = new ClientConfig();
         config.addDefaultParam(HeaderParam.class, "Grpc-Metadata-macaroon", macaroon);
-        if(certHexString != null) {
+        if (certHexString != null) {
             config.setSslSocketFactory(HexStringCertTrustManager.getSslSocketFactory(certHexString));
         }
         config.setHttpConnTimeout(30_000);
@@ -81,6 +83,7 @@ public class LndWallet extends AbstractLightningWallet {
         payment.amt = CoinUnit.bitcoinToSat(amount).toString();
         payment.payment_request = destinationAddress;
         payment.fee_limit = getFeeLimit(feeLimit);
+        payment.dest_custom_records = getCustomRecords(description);
 
         log.info("Sending payment: {}", payment);
         SendPaymentResponse paymentResponse = callChecked(() -> api.sendPayment(payment));
@@ -111,6 +114,14 @@ public class LndWallet extends AbstractLightningWallet {
         return feeLimit;
     }
 
+    private static Map<Long, byte[]> getCustomRecords(String description) {
+        Map<Long, byte[]> customRecords = new HashMap<>();
+        if (description != null && !description.trim().isEmpty()) {
+            customRecords.put(70000L, description.getBytes());
+        }
+        return customRecords;
+    }
+
     @Override
     public String getInvoice(BigDecimal cryptoAmount, String cryptoCurrency, Long paymentValidityInSec, String description) {
         Invoice invoice = new Invoice();
@@ -130,18 +141,28 @@ public class LndWallet extends AbstractLightningWallet {
         return callChecked(() -> api.getInfo().identity_pubkey);
     }
 
-    /**
-     * @return paymentHash
-     */
     @Override
     public BigDecimal getReceivedAmount(String destinationAddress, String cryptoCurrency) {
-        return callChecked(cryptoCurrency, () -> {
+        throw new UnsupportedOperationException("This method is deprecated and should not be used.");
+    }
+
+    @Override
+    public ReceivedAmount getReceivedAmount(String destinationAddress) {
+        return callChecked(() -> {
             PaymentRequest paymentRequest = api.decodePaymentRequest(destinationAddress);
             Invoice invoice = api.getInvoice(paymentRequest.payment_hash);
+            ReceivedAmount receivedAmount;
             if (invoice.settled) {
-                return CoinUnit.mSatToBitcoin(Long.parseLong(invoice.amt_paid_msat));
+                BigDecimal amount = CoinUnit.mSatToBitcoin(Long.parseLong(invoice.amt_paid_msat));
+                receivedAmount = new ReceivedAmount(amount, Integer.MAX_VALUE);
+            } else {
+                receivedAmount = new ReceivedAmount(BigDecimal.ZERO, 0);
             }
-            return BigDecimal.ZERO;
+
+            if (invoice.r_hash != null) {
+                receivedAmount.setTransactionHashes(Collections.singletonList(invoice.r_hash));
+            }
+            return receivedAmount;
         });
     }
 

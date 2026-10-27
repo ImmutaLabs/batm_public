@@ -19,25 +19,25 @@ package com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.coinbase.v
 
 import com.generalbytes.batm.common.currencies.CryptoCurrency;
 import com.generalbytes.batm.server.extensions.IWallet;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.coinbase.api.CoinbaseV2ApiWrapper;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.coinbase.v2.dto.CBAccount;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.coinbase.v2.dto.CBAccountResponse;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.coinbase.v2.dto.CBAddress;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.coinbase.v2.dto.CBAddressesResponse;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.coinbase.v2.dto.CBPaginatedItem;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.coinbase.v2.dto.CBPaginatedResponse;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.coinbase.v2.dto.CBPagination;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.coinbase.v2.dto.CBSendRequest;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.coinbase.v2.dto.CBSendResponse;
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import si.mazi.rescu.ClientConfig;
-import si.mazi.rescu.RestProxyFactory;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -63,23 +63,18 @@ public class CoinbaseWalletV2 implements IWallet {
         .put(CryptoCurrency.BCH.getCode(), "bitcoincash")
         .put(CryptoCurrency.DASH.getCode(), "dash")
         .put(CryptoCurrency.XRP.getCode(), "ripple")
+        .put(CryptoCurrency.SOL.getCode(), "solana")
         .build();
 
-    protected static final String API_VERSION="2016-07-23";
+    protected static final String API_VERSION = "2016-07-23";
     private String preferredCryptoCurrency;
-    protected String apiKey;
-    protected String apiSecret;
-    protected ICoinbaseV2API api;
+    protected CoinbaseV2ApiWrapper api;
     protected String accountName;
-    protected Map<String,String> accountIds = new HashMap<>();
+    protected Map<String, String> accountIds = new HashMap<>();
 
-    public CoinbaseWalletV2(String apiKey, String apiSecret, String accountName) {
+    public CoinbaseWalletV2(CoinbaseV2ApiWrapper api, String accountName) {
         this.accountName = accountName;
-        this.apiKey = apiKey;
-        this.apiSecret = apiSecret;
-        ClientConfig config = new ClientConfig();
-        config.setIgnoreHttpErrorCodes(true);
-        api = RestProxyFactory.createProxy(ICoinbaseV2API.class, "https://api.coinbase.com", config);
+        this.api = api;
     }
 
     @Override
@@ -98,8 +93,8 @@ public class CoinbaseWalletV2 implements IWallet {
     protected synchronized void initIfNeeded(String cryptoCurrency) {
         String accountId = accountIds.get(cryptoCurrency);
         if (accountId == null) {
-            accountId = getAccountId(accountName,cryptoCurrency);
-            accountIds.put(cryptoCurrency,accountId);
+            accountId = getAccountId(accountName, cryptoCurrency);
+            accountIds.put(cryptoCurrency, accountId);
         }
     }
 
@@ -109,7 +104,7 @@ public class CoinbaseWalletV2 implements IWallet {
     private List<CBAccount> getAccounts() {
         return paginate(startingAfter -> {
             long timeStamp = getTimestamp();
-            return api.getAccounts(apiKey, API_VERSION, CBDigest.createInstance(apiSecret, timeStamp), timeStamp, 100, startingAfter);
+            return api.getAccounts(API_VERSION, timeStamp, 100, startingAfter);
         });
     }
 
@@ -117,56 +112,53 @@ public class CoinbaseWalletV2 implements IWallet {
         List<CBAccount> accounts = getAccounts();
         if (accountName != null) {
             for (CBAccount cbAccount : accounts) {
-                if (accountName.equalsIgnoreCase(cbAccount.getName())) {
-                    if (cryptoCurrency.equalsIgnoreCase(cbAccount.getCurrency())) {
-                        preferredCryptoCurrency = cbAccount.getCurrency();
-                        return cbAccount.getId();
-                    }
+                if (accountName.equalsIgnoreCase(cbAccount.getName())
+                    && cryptoCurrency.equalsIgnoreCase(cbAccount.getCurrency().getCode())
+                ) {
+                    preferredCryptoCurrency = cbAccount.getCurrency().getCode();
+                    return cbAccount.getId();
                 }
             }
         } else {
             for (CBAccount cbAccount : accounts) {
-                if (cbAccount.isPrimary()) {
-                    if (cryptoCurrency.equalsIgnoreCase(cbAccount.getCurrency())) {
-                        preferredCryptoCurrency = cbAccount.getCurrency();
-                        return cbAccount.getId();
-                    }
+                if (cbAccount.isPrimary() && cryptoCurrency.equalsIgnoreCase(cbAccount.getCurrency().getCode())) {
+                    preferredCryptoCurrency = cbAccount.getCurrency().getCode();
+                    return cbAccount.getId();
                 }
             }
         }
         for (CBAccount cbAccount : accounts) {
-            if (cryptoCurrency.equalsIgnoreCase(cbAccount.getCurrency())) {
-                preferredCryptoCurrency = cbAccount.getCurrency();
+            if (cryptoCurrency.equalsIgnoreCase(cbAccount.getCurrency().getCode())) {
+                preferredCryptoCurrency = cbAccount.getCurrency().getCode();
                 return cbAccount.getId();
             }
         }
 
         CBAccount cbAccount = accounts.get(0);
-        preferredCryptoCurrency = cbAccount.getCurrency();
+        preferredCryptoCurrency = cbAccount.getCurrency().getCode();
         return cbAccount.getId();
     }
 
     protected long getTimestamp() {
-        return System.currentTimeMillis()/1000;
+        return System.currentTimeMillis() / 1000;
     }
 
 
     @Override
     public String getCryptoAddress(String cryptoCurrency) {
         if (!getCryptoCurrencies().contains(cryptoCurrency)) {
-            log.error("Wallet supports only " + Arrays.toString(getCryptoCurrencies().toArray()) + " not " + cryptoCurrency);
+            log.error("Wallet supports only {} not {}", Arrays.toString(getCryptoCurrencies().toArray()), cryptoCurrency);
             return null;
         }
         initIfNeeded(cryptoCurrency);
         long timeStamp = getTimestamp();
-        CBAddressesResponse addressesResponse = api.getAccountAddresses(apiKey, API_VERSION, CBDigest.createInstance(apiSecret, timeStamp), timeStamp, accountIds.get(cryptoCurrency));
+        CBAddressesResponse addressesResponse = api.getAccountAddresses(API_VERSION, timeStamp, accountIds.get(cryptoCurrency));
         if (addressesResponse != null && addressesResponse.getData() != null && !addressesResponse.getData().isEmpty()) {
             List<CBAddress> addresses = addressesResponse.getData();
-            String network  = getNetworkName(cryptoCurrency);
+            String network = getNetworkName(cryptoCurrency);
             CBAddress address = null;
             if (network != null) {
-                for (int i = 0; i < addresses.size(); i++) {
-                    CBAddress a = addresses.get(i);
+                for (CBAddress a : addresses) {
                     if (a.getNetwork().equalsIgnoreCase(network)) {
                         address = a;
                     }
@@ -178,7 +170,7 @@ public class CoinbaseWalletV2 implements IWallet {
             return address.getAddress();
         }
         if (addressesResponse != null && addressesResponse.getErrors() != null) {
-            log.error("getCryptoAddress - " + addressesResponse.getErrorMessages());
+            log.error("getCryptoAddress - {}", addressesResponse.getErrorMessages());
         }
         return null;
     }
@@ -190,17 +182,17 @@ public class CoinbaseWalletV2 implements IWallet {
     @Override
     public BigDecimal getCryptoBalance(String cryptoCurrency) {
         if (!getCryptoCurrencies().contains(cryptoCurrency)) {
-            log.error("Wallet supports only " + Arrays.toString(getCryptoCurrencies().toArray()) + " not " + cryptoCurrency);
+            log.error("Wallet supports only {} not {}", Arrays.toString(getCryptoCurrencies().toArray()), cryptoCurrency);
             return null;
         }
         initIfNeeded(cryptoCurrency);
         long timeStamp = getTimestamp();
-        CBAccountResponse accountResponse = api.getAccount(apiKey, API_VERSION, CBDigest.createInstance(apiSecret, timeStamp), timeStamp,accountIds.get(cryptoCurrency));
+        CBAccountResponse accountResponse = api.getAccount(API_VERSION, timeStamp, accountIds.get(cryptoCurrency));
         if (accountResponse != null && accountResponse.getData() != null && cryptoCurrency.equalsIgnoreCase(accountResponse.getData().getBalance().getCurrency())) {
             return accountResponse.getData().getBalance().getAmount().stripTrailingZeros();
         }
         if (accountResponse != null && accountResponse.getErrors() != null) {
-            log.error("getCryptoBalance - " + accountResponse.getErrorMessages());
+            log.error("getCryptoBalance - {}", accountResponse.getErrorMessages());
         }
         return null;
     }
@@ -208,7 +200,7 @@ public class CoinbaseWalletV2 implements IWallet {
     @Override
     public String sendCoins(String destinationAddress, BigDecimal amount, String cryptoCurrency, String description) {
         if (!getCryptoCurrencies().contains(cryptoCurrency)) {
-            log.error("Wallet supports only " + Arrays.toString(getCryptoCurrencies().toArray()) + " not " + cryptoCurrency);
+            log.error("Wallet supports only {} not {}", Arrays.toString(getCryptoCurrencies().toArray()), cryptoCurrency);
             return null;
         }
         initIfNeeded(cryptoCurrency);
@@ -221,17 +213,21 @@ public class CoinbaseWalletV2 implements IWallet {
                 destinationTag = addressParts[1];
             }
         }
-        if (CryptoCurrency.USDT.getCode().equals(cryptoCurrency)) {
+        if (CryptoCurrency.USDT.getCode().equals(cryptoCurrency) || CryptoCurrency.ADA.getCode().equals(cryptoCurrency)) {
             amount = amount.setScale(6, RoundingMode.FLOOR);
         }
         log.info("sending {} {} to {}", amount, cryptoCurrency, destinationAddress);
-        CBSendRequest sendRequest = new CBSendRequest("send",destinationAddress,amount.stripTrailingZeros().toPlainString(),cryptoCurrency,description, description, destinationTag); //note that description is here used as unique token as reply protection
-        CBSendResponse response = api.send(apiKey,API_VERSION, CBDigest.createInstance(apiSecret, timeStamp), timeStamp,accountIds.get(cryptoCurrency), sendRequest);
+
+        CBSendRequest sendRequest = new CBSendRequest(
+            "send", destinationAddress, amount.stripTrailingZeros().toPlainString(), cryptoCurrency, description, description, destinationTag
+        ); //note that description is here used as unique token as reply protection
+
+        CBSendResponse response = api.send(API_VERSION, timeStamp, accountIds.get(cryptoCurrency), sendRequest);
         if (response != null && response.getData() != null) {
             return response.getData().getId();
         }
         if (response != null && response.getErrors() != null) {
-            log.error("sendCoins - " + response.getErrorMessages());
+            log.error("sendCoins - {}", response.getErrorMessages());
         }
         return null; //some error happened
     }
@@ -256,9 +252,11 @@ public class CoinbaseWalletV2 implements IWallet {
             }
 
             startingAfter = null;
-            if (response.getData() != null && response.getData().size() > 0) {
+            if (response.getData() != null && !response.getData().isEmpty()) {
                 items.addAll(response.getData());
-                if (response.getPagination() != null && response.getPagination().getNext_uri() != null) {
+
+                CBPagination pagination = response.getPagination();
+                if (pagination != null && hasNext(pagination)) {
                     startingAfter = items.getLast().getId();
                 }
             }
@@ -266,16 +264,15 @@ public class CoinbaseWalletV2 implements IWallet {
         return items;
     }
 
+    private boolean hasNext(CBPagination pagination) {
+        return StringUtils.isNotBlank(pagination.getNext_uri()) || StringUtils.isNotBlank(pagination.getEnding_before());
+    }
 
-//    public static void main(String[] args) {
-//        ServerUtil.setLoggerLevel("si.mazi.rescu","trace");
-//        String cryptoCurrency = CryptoCurrency.BTC.getCode();
-//        CoinbaseWalletV2 w = new CoinbaseWalletV2("LGcOlxy5UNGXGcKp","8bTu2aKO9VsRHNaK7fvf6Y5dyb87GaoV",null);
-//        String cryptoAddress = w.getCryptoAddress(cryptoCurrency);
-//        log.info("cryptoAddress = " + cryptoAddress);
-//        BigDecimal cryptoBalance = w.getCryptoBalance(cryptoCurrency);
-//        log.info("cryptoBalance = " + cryptoBalance);
-//        String result = w.sendCoins("1Nqip1Qc6EP88jwNrVwFy2CiXAuzPhdPgG", new BigDecimal("0.0005"), cryptoCurrency, "RXIDS");
-//        log.info("result = " + result);
-//    }
+    public CoinbaseV2ApiWrapper getApi() {
+        return api;
+    }
+
+    public String getAccountName() {
+        return accountName;
+    }
 }

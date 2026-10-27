@@ -35,7 +35,7 @@ import si.mazi.rescu.ClientConfig;
 import si.mazi.rescu.HttpStatusIOException;
 import si.mazi.rescu.RestProxyFactory;
 
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.QueryParam;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.Security;
@@ -184,6 +184,12 @@ public class BlockIOWallet implements IWallet, ICanSendMany {
         }
 
         return null;
+    }
+
+    @Override
+    public String sendMany(Collection<Transfer> transfers, String cryptoCurrency, String description, String batchId) {
+        log.info("Sending {} transactions with batchId: {}", cryptoCurrency, batchId);
+        return sendMany(transfers, cryptoCurrency, description);
     }
 
     @Override

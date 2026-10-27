@@ -1,5 +1,5 @@
 /*************************************************************************************
- * Copyright (C) 2014-2020 GENERAL BYTES s.r.o. All rights reserved.
+ * Copyright (C) 2014-2024 GENERAL BYTES s.r.o. All rights reserved.
  *
  * This software may be distributed and modified under the terms of the GNU
  * General Public License version 2 (GPL2) as published by the Free Software
@@ -18,8 +18,11 @@
 
 package com.generalbytes.batm.server.extensions;
 
+import com.generalbytes.batm.server.extensions.questionnaire.QuestionnaireResult;
+
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 public interface ITransactionPreparation {
@@ -27,7 +30,9 @@ public interface ITransactionPreparation {
     int TYPE_BUY_CRYPTO = 0;
     int TYPE_SELL_CRYPTO = 1;
     int TYPE_WITHDRAW_CASH = 2;
-
+    int TYPE_CASHBACK = 3;
+    int TYPE_ORDER_CRYPTO = 4;
+    int TYPE_DEPOSIT_CASH = 5;
 
     int RESPONSE_WITHDRAWAL_NOT_POSSIBLE = 0;
     int RESPONSE_WITHDRAWAL_POSSIBLE = 1;
@@ -116,6 +121,14 @@ public interface ITransactionPreparation {
      */
     String getCellPhoneUsed();
 
+    /**
+     * Contains customer email address that was used during transaction
+     *
+     * @return email address
+     */
+    default String getEmailUsed() {
+        return null;
+    }
 
     /**
      * Returns language selected by customer on the terminal
@@ -137,6 +150,23 @@ public interface ITransactionPreparation {
      * @return
      */
     void setErrorMessage(String errorMessage);
+
+    /**
+     * Text to be rendered into a QR code and displayed alongside the error message.
+     *
+     * @return QR code text, or null if no QR code should be displayed
+     */
+    default String getErrorQrCodeText() {
+        return null;
+    }
+
+    /**
+     * Text to be rendered into a QR code and displayed alongside the error message.
+     *
+     * @param text QR code text, or null if no QR code should be displayed
+     */
+    default void setErrorQrCodeText(String text) {
+    }
 
 
     /**
@@ -201,5 +231,11 @@ public interface ITransactionPreparation {
      */
     void setWithdrawalReason(int reason);
 
+    /**
+     * Returns questionnaire results if any questionnaire has been activated.
+     *
+     * @return List of {@link QuestionnaireResult}. Can be null.
+     */
+    List<QuestionnaireResult> getQuestionnaireResults();
 
 }

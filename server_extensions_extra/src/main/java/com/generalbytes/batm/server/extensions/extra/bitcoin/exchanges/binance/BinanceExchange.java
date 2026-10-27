@@ -17,23 +17,31 @@
  ************************************************************************************/
 package com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.binance;
 
+import com.generalbytes.batm.common.currencies.CryptoCurrency;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.XChangeExchange;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.knowm.xchange.ExchangeSpecification;
+import org.knowm.xchange.binance.dto.account.BinanceCurrencyInfo;
+import org.knowm.xchange.binance.service.BinanceAccountServiceRaw;
+import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.account.AccountInfo;
 import org.knowm.xchange.dto.account.Wallet;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract class BinanceExchange extends XChangeExchange {
 
-    public BinanceExchange(String preferredFiatCurrency, String sslUri) {
+    protected BinanceExchange(String preferredFiatCurrency, String sslUri) {
         super(getDefaultSpecification(sslUri), preferredFiatCurrency);
     }
 
-    public BinanceExchange(String key, String secret, String preferredFiatCurrency, String sslUri) {
+    protected BinanceExchange(String key, String secret, String preferredFiatCurrency, String sslUri) {
         super(getSpecification(key, secret, sslUri), preferredFiatCurrency);
     }
 
@@ -69,7 +77,7 @@ public abstract class BinanceExchange extends XChangeExchange {
     @Override
     protected BigDecimal getTradableAmount(BigDecimal cryptoAmount, CurrencyPair currencyPair) {
         try {
-            BigDecimal minStep = getExchange().getExchangeMetaData().getCurrencyPairs().get(currencyPair).getAmountStepSize();
+            BigDecimal minStep = getExchange().getExchangeMetaData().getInstruments().get(currencyPair).getMinimumAmount();
             return minStep == null ? cryptoAmount : getAmountRoundedToMinStep(cryptoAmount, minStep);
         } catch (Exception e) {
             log.error("error adjusting the amount", e);
@@ -91,6 +99,11 @@ public abstract class BinanceExchange extends XChangeExchange {
     public String sendCoins(String destinationAddress, BigDecimal amount, String cryptoCurrency, String description) {
         BigDecimal withdrawalFee = getWithdrawalFee(cryptoCurrency);
         amount = amount.add(withdrawalFee);
+
+        if (CryptoCurrency.USDT.getCode().equals(cryptoCurrency)) {
+            amount = amount.setScale(6, RoundingMode.FLOOR);
+        }
+
         return super.sendCoins(destinationAddress, amount, cryptoCurrency, description);
     }
 
@@ -101,6 +114,48 @@ public abstract class BinanceExchange extends XChangeExchange {
         return getSupportedCryptoCurrencies().stream().map(SupportedCryptoCurrency::getCryptoCurrency).collect(Collectors.toSet());
     }
 
+    @Override
+    protected BigDecimal getWithdrawalFee(String cryptoCurrency) {
+        if (CryptoCurrency.USDT.getCode().equalsIgnoreCase(cryptoCurrency)) {
+            return getUsdtWithdrawalFee(CryptoCurrency.ETH.getCode(), CryptoCurrency.USDT.getCode());
+        }
+
+        if (CryptoCurrency.USDTTRON.getCode().equalsIgnoreCase(cryptoCurrency)) {
+            return getUsdtWithdrawalFee(CryptoCurrency.TRX.getCode(), CryptoCurrency.USDTTRON.getCode());
+        }
+
+        return super.getWithdrawalFee(cryptoCurrency);
+    }
+
+    /**
+     * Gets the USDT withdrawal fee of the given Binance network.
+     *
+     * @param network Binance network id, must match the one used in withdrawFunds
+     * @param cryptoCurrency CAS cryptocurrency code, for logging
+     * @return the fee, or null if it cannot be obtained
+     */
+    private BigDecimal getUsdtWithdrawalFee(String network, String cryptoCurrency) {
+        try {
+            BinanceAccountServiceRaw accountService = (BinanceAccountServiceRaw) getExchange().getAccountService();
+            BigDecimal withdrawFee = accountService.currencyInfos().stream()
+                .filter(info -> Currency.USDT.equals(info.getCurrency()))
+                .findFirst()
+                .map(BinanceCurrencyInfo::getNetworks)
+                .flatMap(networks -> networks.stream()
+                    .filter(binanceNetwork -> network.equals(binanceNetwork.getId()))
+                    .findFirst()
+                )
+                .map(BinanceCurrencyInfo.Network::getWithdrawFee)
+                .orElse(null);
+
+            log.info("Withdrawal fee: {} {}", withdrawFee, cryptoCurrency);
+            return withdrawFee;
+        } catch (IOException e) {
+            log.error("Failed to get {} withdrawal fee for network {} from Binance", cryptoCurrency, network, e);
+            return null;
+        }
+    }
+
     protected BigDecimal getWithdrawalMinStep(String cryptoCurrency) {
         return getSupportedCryptoCurrencies().stream()
             .filter(c -> c.getCryptoCurrency().equals(cryptoCurrency))
@@ -109,25 +164,14 @@ public abstract class BinanceExchange extends XChangeExchange {
             .orElse(null);
     }
 
+    @AllArgsConstructor
+    @Getter
     protected static class SupportedCryptoCurrency {
-        private String cryptoCurrency;
-        private BigDecimal withdrawalMinStep;
+        private final String cryptoCurrency;
+        private final BigDecimal withdrawalMinStep;
 
         public SupportedCryptoCurrency(String cryptoCurrency) {
             this(cryptoCurrency, new BigDecimal("0.00000001"));
-        }
-
-        public SupportedCryptoCurrency(String cryptoCurrency, BigDecimal withdrawalMinStep) {
-            this.cryptoCurrency = cryptoCurrency;
-            this.withdrawalMinStep = withdrawalMinStep;
-        }
-
-        public String getCryptoCurrency() {
-            return cryptoCurrency;
-        }
-
-        public BigDecimal getWithdrawalMinStep() {
-            return withdrawalMinStep;
         }
     }
 }

@@ -1,5 +1,5 @@
 /*************************************************************************************
- * Copyright (C) 2014-2020 GENERAL BYTES s.r.o. All rights reserved.
+ * Copyright (C) 2014-2025 GENERAL BYTES s.r.o. All rights reserved.
  *
  * This software may be distributed and modified under the terms of the GNU
  * General Public License version 2 (GPL2) as published by the Free Software
@@ -19,8 +19,24 @@ package com.generalbytes.batm.server.extensions.extra.bitcoin;
 
 import com.generalbytes.batm.common.currencies.CryptoCurrency;
 import com.generalbytes.batm.common.currencies.FiatCurrency;
-import com.generalbytes.batm.server.extensions.*;
+import com.generalbytes.batm.server.extensions.AbstractExtension;
+import com.generalbytes.batm.server.extensions.ExtensionsUtil;
 import com.generalbytes.batm.server.extensions.FixPriceRateSource;
+import com.generalbytes.batm.server.extensions.ICryptoAddressValidator;
+import com.generalbytes.batm.server.extensions.ICryptoCurrencyDefinition;
+import com.generalbytes.batm.server.extensions.IExchange;
+import com.generalbytes.batm.server.extensions.IExtensionContext;
+import com.generalbytes.batm.server.extensions.IPaperWalletGenerator;
+import com.generalbytes.batm.server.extensions.IPaymentProcessor;
+import com.generalbytes.batm.server.extensions.IRateSource;
+import com.generalbytes.batm.server.extensions.IWallet;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.coinbase.api.CoinbaseApiFactory;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.coinbase.api.CoinbaseApiWrapper;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.coinbase.api.CoinbaseApiWrapperCdp;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.coinbase.api.CoinbaseApiWrapperLegacy;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.coinbase.api.CoinbaseV2ApiWrapperCdp;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.coinbase.api.CoinbaseV2ApiWrapperLegacy;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.coinbase.api.ICoinbaseV3Api;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.binance.BinanceComExchange;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.binance.BinanceUsExchange;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.bitbuy.BitbuyExchange;
@@ -28,15 +44,15 @@ import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.bitfinex.
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.bitflyer.BitFlyerExchange;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.bitpandapro.BitpandaProExchange;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.bitstamp.BitstampExchange;
-import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.bittrex.BittrexExchange;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.coinbase.CoinbaseExchange;
-import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.coinbasepro.CoinbaseProExchange;
-import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.coingi.CoingiExchange;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.coinbase.ICoinbaseAPI;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.coinzix.CoinZixExchange;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.dvchain.DVChainExchange;
-import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.hitbtc.HitbtcExchange;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.enigma.EnigmaExchange;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.hitbtc.HitbtcExchange;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.okx.OkxExchange;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.poloniex.PoloniexExchange;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.stillmandigital.StillmanDigitalExchange;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.paymentprocessors.bitcoinpay.BitcoinPayPP;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.paymentprocessors.coinofsale.CoinOfSalePP;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.sources.bitkub.BitKubRateSource;
@@ -53,21 +69,30 @@ import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.bitgo.v2.Bi
 import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.coinbase.v2.CoinbaseV2RateSource;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.coinbase.v2.CoinbaseWalletV2;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.coinbase.v2.CoinbaseWalletV2WithUniqueAddresses;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.coinbase.v2.ICoinbaseV2API;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.cryptx.v2.CryptXWallet;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.cryptx.v2.CryptXWithUniqueAddresses;
+import com.generalbytes.batm.server.extensions.util.DummyWalletAndExchangeAndSourceFactory;
 import com.generalbytes.batm.server.extensions.watchlist.IWatchList;
 
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.StringTokenizer;
 
 import static com.generalbytes.batm.common.currencies.CryptoCurrency.USDT;
 import static com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.bitflyer.BitFlyerExchange.BITFLYER_COM_BASE_URL;
 import static com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.bitflyer.BitFlyerExchange.BITFLYER_JP_BASE_URL;
-import static com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.cryptx.v2.ICryptXAPI.*;
+import static com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.cryptx.v2.ICryptXAPI.PRIORITY_CUSTOM;
+import static com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.cryptx.v2.ICryptXAPI.PRIORITY_HIGH;
+import static com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.cryptx.v2.ICryptXAPI.PRIORITY_LOW;
+import static com.generalbytes.batm.server.extensions.extra.bitcoin.wallets.cryptx.v2.ICryptXAPI.PRIORITY_MEDIUM;
 
 public class BitcoinExtension extends AbstractExtension {
     private IExtensionContext ctx;
+    private static final DummyWalletAndExchangeAndSourceFactory dummyFactory = new DummyWalletAndExchangeAndSourceFactory();
+
 
     @Override
     public void init(IExtensionContext ctx) {
@@ -109,10 +134,6 @@ public class BitcoinExtension extends AbstractExtension {
                 String apiKey = paramTokenizer.nextToken();
                 String secretKey = paramTokenizer.nextToken();
                 return new BitstampExchange(preferredFiatCurrency, userId, apiKey, secretKey);
-            } else if ("bittrex".equalsIgnoreCase(prefix)) {
-                String apiKey = paramTokenizer.nextToken();
-                String apiSecret = paramTokenizer.nextToken();
-                return new BittrexExchange(apiKey, apiSecret, FiatCurrency.USD.getCode());
             } else if ("hitbtc".equalsIgnoreCase(prefix)) {
                 String preferredFiatCurrency = FiatCurrency.USD.getCode();
                 String apiKey = paramTokenizer.nextToken();
@@ -121,40 +142,19 @@ public class BitcoinExtension extends AbstractExtension {
             } else if ("coinbaseexchange".equalsIgnoreCase(prefix)) {
                 String apiKey = paramTokenizer.nextToken().trim();
                 String secretKey = paramTokenizer.nextToken().trim();
+                CoinbaseExchangeParameters parameters = getCoinbaseExchangeParameters(paramTokenizer);
 
-                String accountName = null;
-                String preferedFiatCurrency = null;
-                String paymentMethodName = null;
+                ICoinbaseAPI api = CoinbaseApiFactory.createCoinbaseApiLegacy();
+                CoinbaseApiWrapper apiWrapper = new CoinbaseApiWrapperLegacy(api, apiKey, secretKey);
+                return new CoinbaseExchange(apiWrapper, parameters.accountName, parameters.preferredFiatCurrency, parameters.paymentMethodName);
+            } else if ("coinbaseexchange2".equalsIgnoreCase(prefix)) {
+                String privateKey = paramTokenizer.nextToken().trim();
+                String keyName = paramTokenizer.nextToken().trim();
+                CoinbaseExchangeParameters parameters = getCoinbaseExchangeParameters(paramTokenizer);
 
-                if(paramTokenizer.hasMoreTokens()) {
-                    accountName = paramTokenizer.nextToken().trim();
-                }
-
-                if(paramTokenizer.hasMoreTokens()) {
-                    preferedFiatCurrency = paramTokenizer.nextToken().toUpperCase().trim();
-                }
-
-                if(paramTokenizer.hasMoreTokens()) {
-                    paymentMethodName = paramTokenizer.nextToken().trim();
-                }
-                return new CoinbaseExchange(apiKey, secretKey, accountName, preferedFiatCurrency, paymentMethodName);
-            } else if ("coinbasepro".equalsIgnoreCase(prefix)) {
-                String preferredFiatCurrency = FiatCurrency.USD.getCode();
-                String key = paramTokenizer.nextToken();
-                String secret = paramTokenizer.nextToken();
-                String passphrase = paramTokenizer.nextToken();
-                if (paramTokenizer.hasMoreTokens()) {
-                    preferredFiatCurrency = paramTokenizer.nextToken().toUpperCase();
-                }
-                return new CoinbaseProExchange(key, secret, passphrase, preferredFiatCurrency, false);
-            } else if ("coingi".equalsIgnoreCase(prefix)) {
-                String preferredFiatCurrency = FiatCurrency.USD.getCode();
-                String key = paramTokenizer.nextToken();
-                String privateKey = paramTokenizer.nextToken();
-                if (paramTokenizer.hasMoreTokens()) {
-                    preferredFiatCurrency = paramTokenizer.nextToken().toUpperCase();
-                }
-                return new CoingiExchange(key, privateKey, preferredFiatCurrency);
+                ICoinbaseV3Api api = CoinbaseApiFactory.createCoinbaseV3Api();
+                CoinbaseApiWrapperCdp apiWrapper = new CoinbaseApiWrapperCdp(api, privateKey, keyName);
+                return new CoinbaseExchange(apiWrapper, parameters.accountName, parameters.preferredFiatCurrency, parameters.paymentMethodName);
             } else if ("dvchain".equalsIgnoreCase(prefix)) {
                 String preferredFiatCurrency = FiatCurrency.USD.getCode();
                 String apiSecret = paramTokenizer.nextToken();
@@ -221,12 +221,60 @@ public class BitcoinExtension extends AbstractExtension {
                 String apiKey = paramTokenizer.nextToken();
                 String apiSecret = paramTokenizer.nextToken();
                 return new BitbuyExchange(apiKey, apiSecret);
+            } else if ("stillmandigital".equalsIgnoreCase(prefix)) {
+                String apiKey = paramTokenizer.nextToken();
+                String apiSecret = paramTokenizer.nextToken();
+                boolean useSandbox = paramTokenizer.hasMoreTokens() && paramTokenizer.nextToken().equals("sandbox");
+                return new StillmanDigitalExchange(apiKey, apiSecret, useSandbox);
+            } else if ("okx".equalsIgnoreCase(prefix)) {
+                String preferredFiatCurrency = FiatCurrency.USD.getCode();
+                String apiKey = paramTokenizer.nextToken();
+                String secretKey = paramTokenizer.nextToken();
+                String passphrase = paramTokenizer.nextToken();
+                if (paramTokenizer.hasMoreTokens()) {
+                    preferredFiatCurrency = paramTokenizer.nextToken().toUpperCase();
+                }
+                return new OkxExchange(preferredFiatCurrency, apiKey, secretKey, passphrase);
+            } else if ("bnbdemo".equalsIgnoreCase(prefix)) {
+                return dummyFactory.createDummyWithFiatCurrencyAndAddress(paramTokenizer, CryptoCurrency.BNB);
             }
         }
         } catch (Exception e) {
             ExtensionsUtil.logExtensionParamsException("createExchange", getClass().getSimpleName(), paramString, e);
         }
         return null;
+    }
+
+    private CoinbaseExchangeParameters getCoinbaseExchangeParameters(StringTokenizer paramTokenizer) {
+        String accountName = null;
+        String preferredFiatCurrency = null;
+        String paymentMethodName = null;
+
+        if (paramTokenizer.hasMoreTokens()) {
+            accountName = paramTokenizer.nextToken().trim();
+        }
+
+        if (paramTokenizer.hasMoreTokens()) {
+            preferredFiatCurrency = paramTokenizer.nextToken().toUpperCase().trim();
+        }
+
+        if (paramTokenizer.hasMoreTokens()) {
+            paymentMethodName = paramTokenizer.nextToken().trim();
+        }
+
+        return new CoinbaseExchangeParameters(accountName, preferredFiatCurrency, paymentMethodName);
+    }
+
+    private static class CoinbaseExchangeParameters {
+        private final String accountName;
+        private final String preferredFiatCurrency;
+        private final String paymentMethodName;
+
+        public CoinbaseExchangeParameters(String accountName, String preferredFiatCurrency, String paymentMethodName) {
+            this.accountName = accountName;
+            this.preferredFiatCurrency = preferredFiatCurrency;
+            this.paymentMethodName = paymentMethodName;
+        }
     }
 
     @Override
@@ -285,9 +333,13 @@ public class BitcoinExtension extends AbstractExtension {
                 String proxyUrl = st.nextToken("\n").replaceFirst(":", "");
                 return new BitcoreWallet(apiKey, proxyUrl);
             } else if ("bitgo".equalsIgnoreCase(walletType) || "bitgonoforward".equalsIgnoreCase(walletType)) {
-                // bitgo:host:port:token:wallet_address:wallet_passphrase:num_blocks
+                // BitGo API Specification: https://developers.bitgo.com/api/express.wallet.sendcoins
+                //
+                // bitgo:host:port:token:wallet_address:wallet_passphrase:num_blocks:fee_rate:max_fee_rate
                 // but host is optionally including the "http://" and port is optional,
-                // num_blocks is an optional integer greater than 2 and it's used to calculate mining fee.
+                // num_blocks is an optional integer greater than 2 and it's used to calculate mining fee,
+                // fee_rate is an optional integer defined fee rate,
+                // max_fee_rate is an optional integer defined maximum fee rate.
                 // bitgo:http://localhost:80:token:wallet_address:wallet_passphrase
                 // bitgo:http://localhost:token:wallet_address:wallet_passphrase
                 // bitgo:localhost:token:wallet_address:wallet_passphrase
@@ -322,39 +374,48 @@ public class BitcoinExtension extends AbstractExtension {
                 host = tunnelAddress.getHostString();
                 port = tunnelAddress.getPort();
 
-                String blocks;
-                int num;
-                Integer numBlocks = 2;
-                if(st.hasMoreTokens()){
-                  blocks = st.nextToken();
-                  num = Integer.parseInt(blocks);
-                  if(num > 2) {
-                    numBlocks = num;
-                  }
+                int numBlocks = 2;
+                if (st.hasMoreTokens()) {
+                    int number = Integer.parseInt(st.nextToken());
+                    if (number > 2) {
+                        numBlocks = number;
+                    }
+                }
+
+                Integer feeRate = st.hasMoreTokens() ? Integer.parseInt(st.nextToken()) : null;
+                Integer maxFeeRate = st.hasMoreTokens() ? Integer.parseInt(st.nextToken()) : null;
+                if (feeRate != null && (maxFeeRate == null || feeRate > maxFeeRate)) {
+                    maxFeeRate = feeRate;
                 }
 
                 if ("bitgonoforward".equalsIgnoreCase(walletType)) {
-                  return new BitgoWalletWithUniqueAddresses(scheme, host, port, token, walletId, walletPassphrase, numBlocks);
+                    return new BitgoWalletWithUniqueAddresses(scheme, host, port, token, walletId, walletPassphrase, numBlocks, feeRate, maxFeeRate);
                 }
 
-                return new BitgoWallet(scheme, host, port, token, walletId, walletPassphrase, numBlocks);
+                return new BitgoWallet(scheme, host, port, token, walletId, walletPassphrase, numBlocks, feeRate, maxFeeRate);
 
-            } else if ("coinbasewallet2".equalsIgnoreCase(walletType)
-                || "coinbasewallet2noforward".equalsIgnoreCase(walletType)) {
+            } else if ("coinbasewallet2".equalsIgnoreCase(walletType) || "coinbasewallet2noforward".equalsIgnoreCase(walletType)) {
                 String apiKey = st.nextToken();
                 String secretKey = st.nextToken();
+                String accountName = getCoinbaseWalletAccountNameParameter(st);
 
-                String accountName = null;
-                if (st.hasMoreTokens()) {
-                    accountName = st.nextToken();
-                    if (accountName.trim().isEmpty()) {
-                        accountName = null;
-                    }
-                }
+                ICoinbaseV2API api = CoinbaseApiFactory.createCoinbaseV2ApiLegacy();
+                CoinbaseV2ApiWrapperLegacy apiWrapper = new CoinbaseV2ApiWrapperLegacy(api, apiKey, secretKey);
                 if ("coinbasewallet2noforward".equalsIgnoreCase(walletType)) {
-                    return new CoinbaseWalletV2WithUniqueAddresses(apiKey, secretKey, accountName);
+                    return new CoinbaseWalletV2WithUniqueAddresses(apiWrapper, accountName);
                 }
-                return new CoinbaseWalletV2(apiKey, secretKey, accountName);
+                return new CoinbaseWalletV2(apiWrapper, accountName);
+            } else if ("coinbasewallet3".equalsIgnoreCase(walletType) || "coinbasewallet3noforward".equalsIgnoreCase(walletType)) {
+                String privateKey = st.nextToken();
+                String keyName = st.nextToken();
+                String accountName = getCoinbaseWalletAccountNameParameter(st);
+
+                ICoinbaseV3Api api = CoinbaseApiFactory.createCoinbaseV3Api();
+                CoinbaseV2ApiWrapperCdp apiWrapper = new CoinbaseV2ApiWrapperCdp(api, privateKey, keyName);
+                if ("coinbasewallet3noforward".equalsIgnoreCase(walletType)) {
+                    return new CoinbaseWalletV2WithUniqueAddresses(apiWrapper, accountName);
+                }
+                return new CoinbaseWalletV2(apiWrapper, accountName);
             } else if ("cryptx".equalsIgnoreCase(walletType) || "cryptxnoforward".equalsIgnoreCase(walletType)) {
 
                 String first = st.nextToken();
@@ -421,10 +482,22 @@ public class BitcoinExtension extends AbstractExtension {
                     return new CryptXWithUniqueAddresses(scheme, host, port, token, walletId, priority, customFeePrice, customGasLimit, password);
                 }
                 return new CryptXWallet(scheme, host, port, token, walletId, priority, customFeePrice, customGasLimit, password);
+            } else if ("bnbdemo".equalsIgnoreCase(walletType)) {
+                return dummyFactory.createDummyWithFiatCurrencyAndAddress(st, CryptoCurrency.BNB);
             }
         }
         } catch (Exception e) {
             ExtensionsUtil.logExtensionParamsException("createWallet", getClass().getSimpleName(), walletLogin, e);
+        }
+        return null;
+    }
+
+    private String getCoinbaseWalletAccountNameParameter(StringTokenizer stringTokenizer) {
+        if (stringTokenizer.hasMoreTokens()) {
+            String accountName = stringTokenizer.nextToken();
+            if (!accountName.trim().isEmpty()) {
+                return accountName;
+            }
         }
         return null;
     }
@@ -489,9 +562,6 @@ public class BitcoinExtension extends AbstractExtension {
                     preferredFiatCurrency = st.nextToken().toUpperCase();
                 }
                 return new BitstampExchange(preferredFiatCurrency);
-            } else if ("bittrex".equalsIgnoreCase(rsType)) {
-                String preferredFiatCurrency = st.hasMoreTokens() ? st.nextToken().toUpperCase() : FiatCurrency.USD.getCode();
-                return new BittrexExchange(preferredFiatCurrency);
             } else if ("bity".equalsIgnoreCase(rsType)) {
                 String preferredFiatCurrency = FiatCurrency.CHF.getCode();
                 if (st.hasMoreTokens()) {
@@ -505,22 +575,20 @@ public class BitcoinExtension extends AbstractExtension {
                 if (st.hasMoreTokens()) {
                     preferredFiatCurrency = st.nextToken().toUpperCase();
                 }
-                return new CoinbaseV2RateSource(preferredFiatCurrency);
-            } else if ("coinbasepro".equalsIgnoreCase(rsType)) {
-                String preferredFiatCurrency = FiatCurrency.USD.getCode();
-                if (st.hasMoreTokens()) {
-                    preferredFiatCurrency = st.nextToken().toUpperCase();
-                }
-                return new CoinbaseProExchange(preferredFiatCurrency);
-            } else if ("coingi".equalsIgnoreCase(rsType)) {
-                String preferredFiatCurrency = FiatCurrency.USD.getCode();
-                if (st.hasMoreTokens()) {
-                    preferredFiatCurrency = st.nextToken().toUpperCase();
-                }
-                return new CoingiExchange(preferredFiatCurrency);
+                // Rate Source doesn't need credentials
+                ICoinbaseV2API api = CoinbaseApiFactory.createCoinbaseV2ApiLegacy();
+                CoinbaseV2ApiWrapperLegacy apiWrapper = new CoinbaseV2ApiWrapperLegacy(api, null, null);
+                return new CoinbaseV2RateSource(preferredFiatCurrency, apiWrapper);
             } else if ("coingecko".equalsIgnoreCase(rsType)) {
-                String preferredFiatCurrency = st.hasMoreTokens() ? st.nextToken().toUpperCase() : FiatCurrency.USD.getCode();
-                return new CoinGeckoRateSource(preferredFiatCurrency);
+                String preferredFiatCurrency = FiatCurrency.USD.getCode();
+                if (st.hasMoreTokens()) {
+                    preferredFiatCurrency = st.nextToken().toUpperCase();
+                }
+                String apiKey = null;
+                if (st.hasMoreTokens()) {
+                    apiKey = st.nextToken();
+                }
+                return new CoinGeckoRateSource(preferredFiatCurrency, apiKey);
             } else if ("coinpaprika".equalsIgnoreCase(rsType)) {
                 String preferredFiatCurrency = st.hasMoreTokens() ? st.nextToken().toUpperCase() : FiatCurrency.USD.getCode();
                 return new CoinPaprikaRateSource(preferredFiatCurrency);
@@ -557,10 +625,12 @@ public class BitcoinExtension extends AbstractExtension {
                 return new SatangProRateSource(preferredFiatCurrency);
             } else if ("binancecom".equalsIgnoreCase(rsType)) {
                 String preferredFiatCurrency = FiatCurrency.EUR.getCode();
+                String apikey = st.nextToken();
+                String secretKey = st.nextToken();
                 if (st.hasMoreTokens()) {
                     preferredFiatCurrency = st.nextToken().toUpperCase();
                 }
-                return new BinanceComExchange(preferredFiatCurrency);
+                return new BinanceComExchange(apikey, secretKey, preferredFiatCurrency);
             } else if ("binanceus".equalsIgnoreCase(rsType)) {
                 String preferredFiatCurrency = FiatCurrency.USD.getCode();
                 if (st.hasMoreTokens()) {
@@ -585,6 +655,17 @@ public class BitcoinExtension extends AbstractExtension {
                 String apiKey = st.nextToken();
                 String apiSecret = st.nextToken();
                 return new BitbuyExchange(apiKey, apiSecret);
+            } else if ("stillmandigital".equalsIgnoreCase(rsType)) {
+                String apiKey = st.nextToken();
+                String apiSecret = st.nextToken();
+                boolean useSandbox = st.hasMoreTokens() && st.nextToken().equals("sandbox");
+                return new StillmanDigitalExchange(apiKey, apiSecret, useSandbox);
+            } else if ("okx".equalsIgnoreCase(rsType)) {
+                String preferredFiatCurrency = FiatCurrency.USD.getCode();
+                if (st.hasMoreTokens()) {
+                    preferredFiatCurrency = st.nextToken().toUpperCase();
+                }
+                return new OkxExchange(preferredFiatCurrency);
             }
         }
         } catch (Exception e) {
@@ -595,7 +676,7 @@ public class BitcoinExtension extends AbstractExtension {
 
     @Override
     public Set<String> getSupportedCryptoCurrencies() {
-        Set<String> result = new HashSet<String>();
+        Set<String> result = new HashSet<>();
         result.add(CryptoCurrency.BTC.getCode());
         result.add(CryptoCurrency.ETH.getCode());
         result.add(CryptoCurrency.LTC.getCode());

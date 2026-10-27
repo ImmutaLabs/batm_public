@@ -19,10 +19,10 @@ package com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.coinbase
 
 import com.generalbytes.batm.common.currencies.CryptoCurrency;
 import com.generalbytes.batm.common.currencies.FiatCurrency;
-import com.generalbytes.batm.server.extensions.util.net.RateLimiter;
 import com.generalbytes.batm.server.extensions.IExchangeAdvanced;
 import com.generalbytes.batm.server.extensions.IRateSourceAdvanced;
 import com.generalbytes.batm.server.extensions.ITask;
+import com.generalbytes.batm.server.extensions.extra.bitcoin.coinbase.api.CoinbaseApiWrapper;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.coinbase.dto.CBAccount;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.coinbase.dto.CBAccountsResponse;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.coinbase.dto.CBNewAddressResponse;
@@ -32,17 +32,13 @@ import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.coinbase.
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.coinbase.dto.CBPriceResponse;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.coinbase.dto.CBSendCoinsRequest;
 import com.generalbytes.batm.server.extensions.extra.bitcoin.exchanges.coinbase.dto.CBSendCoinsResponse;
-import com.generalbytes.batm.server.extensions.util.net.CompatSSLSocketFactory;
+import com.generalbytes.batm.server.extensions.util.net.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import si.mazi.rescu.ClientConfig;
-import si.mazi.rescu.RestProxyFactory;
 
-import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
+import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -60,13 +56,10 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
     private static final Set<String> FIAT_CURRENCIES = new HashSet<>();
     private static final Set<String> CRYPTO_CURRENCIES = new HashSet<>();
 
-    private ICoinbaseAPI api;
-
-    private String apiKey;
-    private String secretKey;
-    private String accountName;
-    private String preferedFiatCurrency;
-    private String paymentMethodName;
+    private final CoinbaseApiWrapper api;
+    private final String accountName;
+    private final String preferredFiatCurrency;
+    private final String paymentMethodName;
 
     static {
         initConstants();
@@ -90,36 +83,20 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
         CRYPTO_CURRENCIES.add(CryptoCurrency.ETH.getCode());
         CRYPTO_CURRENCIES.add(CryptoCurrency.LTC.getCode());
         CRYPTO_CURRENCIES.add(CryptoCurrency.XRP.getCode());
+        CRYPTO_CURRENCIES.add(CryptoCurrency.SOL.getCode());
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public CoinbaseExchange() {
-        try {
-            ClientConfig config = new ClientConfig();
-            SSLContext sslcontext = SSLContext.getInstance("TLS");
-            sslcontext.init(null, null, null);
-            CompatSSLSocketFactory socketFactory = new CompatSSLSocketFactory(sslcontext.getSocketFactory());
-            config.setSslSocketFactory(socketFactory);
-            config.setIgnoreHttpErrorCodes(true);
-            api = RestProxyFactory.createProxy(ICoinbaseAPI.class, "https://api.coinbase.com", config);
-        } catch (NoSuchAlgorithmException | KeyManagementException e) {
-            log.error("constructor - Cannot create instance.", e);
-        }
-    }
-
-    public CoinbaseExchange(String apiKey, String secretKey, String accountName, String preferedFiatCurrency, String paymentMethodName) {
-        this();
-        this.apiKey = apiKey;
-        this.secretKey = secretKey;
+    public CoinbaseExchange(CoinbaseApiWrapper api, String accountName, String preferredFiatCurrency, String paymentMethodName) {
+        this.api = api;
         this.accountName = accountName;
-        this.preferedFiatCurrency = preferedFiatCurrency;
+        this.preferredFiatCurrency = preferredFiatCurrency;
         this.paymentMethodName = paymentMethodName;
     }
 
     @Override
     public String getPreferredFiatCurrency() {
-        if (preferedFiatCurrency != null && !preferedFiatCurrency.isEmpty()) {
-            return preferedFiatCurrency;
+        if (preferredFiatCurrency != null && !preferredFiatCurrency.isEmpty()) {
+            return preferredFiatCurrency;
         }
         return FiatCurrency.USD.getCode();
     }
@@ -147,7 +124,7 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
                     log.error("getCryptoBalance (1) - No account.");
                 }
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             log.error("getCryptoBalance(2)", e);
         }
         return null;
@@ -163,10 +140,10 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
                 if (account != null) {
                     return new BigDecimal(account.balance.amount);
                 } else {
-                    log.error("fiatCurrency (1) - " + ("No account. fiatCurrency = " + fiatCurrency));
+                    log.error("fiatCurrency (1) - No account. fiatCurrency = {}", fiatCurrency);
                 }
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             log.error("getFiatBalance (2)", e);
         }
         return null;
@@ -203,7 +180,7 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
 
     private BigDecimal getExchangeRate(String cryptoCurrency, String fiatCurrency, String priceType) {
         try {
-            log.debug("getExchangeRate - " + priceType);
+            log.debug("getExchangeRate - {}", priceType);
             String currencyPair = getCurrencyPair(cryptoCurrency, fiatCurrency);
             if (currencyPair != null) {
                 RateLimiter.waitForPossibleCall(getClass());
@@ -211,10 +188,10 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
                 if (priceResponse.errors == null) {
                     return new BigDecimal(priceResponse.data.amount);
                 } else {
-                    log.error("getExchangeRate - " + priceResponse.getErrorMessages());
+                    log.error("getExchangeRate - {}", priceResponse.getErrorMessages());
                 }
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             log.error("getExchangeRate", e);
         }
         return null;
@@ -225,13 +202,15 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
         try {
             String coinBaseTime = getTime();
             RateLimiter.waitForPossibleCall(getClass());
-            CBNewAddressResponse newAddressResponse = api.getNewAddress(CB_VERSION, apiKey, CoinbaseDigest.createInstance(secretKey), coinBaseTime, getAccountId(accountName, cryptoCurrency));
+            CBNewAddressResponse newAddressResponse = api.getNewAddress(
+                CB_VERSION, coinBaseTime, getAccountId(accountName, cryptoCurrency)
+            );
             if (newAddressResponse.errors == null) {
                 return newAddressResponse.data.address;
             } else {
-                log.error("getDepositAddress - " + newAddressResponse.getErrorMessages());
+                log.error("getDepositAddress - {}", newAddressResponse.getErrorMessages());
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             log.error("getDepositAddress", e);
         }
         return null;
@@ -241,7 +220,7 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
         try {
             String coinBaseTime = getTime();
             RateLimiter.waitForPossibleCall(getClass());
-            CBPaymentMethodsResponse paymentMethodsResponse = api.listPaymentMethods(CB_VERSION, apiKey, CoinbaseDigest.createInstance(secretKey), coinBaseTime);
+            CBPaymentMethodsResponse paymentMethodsResponse = api.listPaymentMethods(CB_VERSION, coinBaseTime);
             log.debug("getMethodIdForCurrency - Payment methods: {}", paymentMethodsResponse);
             if (paymentMethodsResponse.errors == null) {
                 for (CBPaymentMethodsResponse.CBPaymentMethod d : paymentMethodsResponse.data) {
@@ -253,9 +232,9 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
                     }
                 }
             } else {
-                log.error("getMethodIdForCurrency - " + paymentMethodsResponse.getErrorMessages());
+                log.error("getMethodIdForCurrency - {}", paymentMethodsResponse.getErrorMessages());
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             log.error("getMethodIdForCurrency", e);
         }
         return null;
@@ -264,6 +243,9 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
     @Override
     public String sendCoins(String destinationAddress, BigDecimal amount, String cryptoCurrency, String description) {
         try {
+            if (CryptoCurrency.USDT.getCode().equals(cryptoCurrency) || CryptoCurrency.ADA.getCode().equals(cryptoCurrency)) {
+                amount = amount.setScale(6, RoundingMode.FLOOR);
+            }
             String coinBaseTime = getTime();
             CBSendCoinsRequest sendCoinsRequest = new CBSendCoinsRequest();
             sendCoinsRequest.to = destinationAddress;
@@ -271,46 +253,17 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
             sendCoinsRequest.currency = cryptoCurrency.toUpperCase();
             sendCoinsRequest.description = description;
             RateLimiter.waitForPossibleCall(getClass());
-            CBSendCoinsResponse sendCoinsResponse = api.sendCoins(CB_VERSION, apiKey, CoinbaseDigest.createInstance(secretKey), coinBaseTime, getAccountId(accountName, cryptoCurrency), sendCoinsRequest);
+            log.info("sending {} {} to {}", amount, cryptoCurrency, destinationAddress);
+            CBSendCoinsResponse sendCoinsResponse = api.sendCoins(
+                CB_VERSION, coinBaseTime, getAccountId(accountName, cryptoCurrency), sendCoinsRequest
+            );
             if (sendCoinsResponse.errors == null) {
                 return sendCoinsResponse.data.id;
             } else {
-                log.error("sendCoins - " + sendCoinsResponse.getErrorMessages());
+                log.error("sendCoins - {}", sendCoinsResponse.getErrorMessages());
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             log.error("sendCoins", e);
-        }
-        return null;
-    }
-
-    private String getBuyStatus(String buyId, String cryptoCurrency) {
-        try {
-            String coinBaseTime = getTime();
-            RateLimiter.waitForPossibleCall(getClass());
-            CBOrderResponse orderResponse = api.getBuyOrder(CB_VERSION, apiKey, CoinbaseDigest.createInstance(secretKey), coinBaseTime, getAccountId(accountName, cryptoCurrency), buyId);
-            if (orderResponse.errors == null) {
-                return orderResponse.data.status;
-            } else {
-                log.error("getBuyStatus - " + orderResponse.getErrorMessages());
-            }
-        } catch (Throwable e) {
-            log.error("getBuyStatus", e);
-        }
-        return null;
-    }
-
-    private String getSellStatus(String sellId, String cryptoCurrency) {
-        try {
-            String coinBaseTime = getTime();
-            RateLimiter.waitForPossibleCall(getClass());
-            CBOrderResponse orderResponse = api.getSellOrder(CB_VERSION, apiKey, CoinbaseDigest.createInstance(secretKey), coinBaseTime, getAccountId(accountName, cryptoCurrency), sellId);
-            if (orderResponse.errors == null) {
-                return orderResponse.data.status;
-            } else {
-                log.error("getSellStatus - " + orderResponse.getErrorMessages());
-            }
-        } catch (Throwable e) {
-            log.error("getSellStatus", e);
         }
         return null;
     }
@@ -355,12 +308,12 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
 
     class PurchaseCoinsTask implements ITask {
 
-        private long MAXIMUM_TIME_TO_WAIT_FOR_ORDER_TO_FINISH = 5 * 60 * 60 * 1000; // 5 hours
+        private static final long MAXIMUM_TIME_TO_WAIT_FOR_ORDER_TO_FINISH = 5 * 60 * 60 * 1000L; // 5 hours
         private long createTime;
 
-        private BigDecimal amount;
-        private String cryptoCurrency;
-        private String fiatCurrency;
+        private final BigDecimal amount;
+        private final String cryptoCurrency;
+        private final String fiatCurrency;
         private String orderAId;
         private String result;
         private boolean finished;
@@ -376,32 +329,45 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
             try {
                 String methodId = getMethodIdForCurrency(fiatCurrency, paymentMethodName);
                 if (methodId == null) {
-                    log.error("Payment method for currency " + fiatCurrency + " and name='" + paymentMethodName + "' is not available.");
+                    log.error("Payment method for currency {} and name='{}' is not available.", fiatCurrency, paymentMethodName);
                 } else {
                     CBOrderRequest orderRequest = new CBOrderRequest();
-                    orderRequest.total = amount.toPlainString();
+                    orderRequest.total = getValidAmount();
                     orderRequest.currency = cryptoCurrency;
                     orderRequest.agree_btc_amount_varies = true;
                     orderRequest.commit = true;
                     orderRequest.quote = false;
                     orderRequest.payment_method = methodId;
+                    orderRequest.fiatCurrency = fiatCurrency;
 
                     String coinBaseTime = getTime();
                     RateLimiter.waitForPossibleCall(getClass());
-                    CBOrderResponse orderResponse = api.buyCoins(CB_VERSION, apiKey, CoinbaseDigest.createInstance(secretKey), coinBaseTime, getAccountId(accountName, cryptoCurrency), orderRequest);
+                    CBOrderResponse orderResponse = api.buyCoins(
+                        CB_VERSION, coinBaseTime, getAccountId(accountName, cryptoCurrency), orderRequest
+                    );
 
-                    if (orderResponse.errors == null) {
+                    if (orderResponse != null && orderResponse.errors == null && orderResponse.data != null) {
                         orderAId = orderResponse.data.id;
                         createTime = System.currentTimeMillis();
-                        log.debug("PurchaseCoinsTask.onCreate - " + ("orderAId = " + orderAId));
+                        log.debug("PurchaseCoinsTask.onCreate - orderAId = {}", orderAId);
                     } else {
-                        log.error("PurchaseCoinsTask.onCreate - " + orderResponse.getErrorMessages());
+                        log.error(
+                            "PurchaseCoinsTask.onCreate - {}", orderResponse == null ? "unknown error" : orderResponse.getErrorMessages()
+                        );
                     }
                 }
             } catch (Exception e) {
                 log.error("PurchaseCoinsTask.onCreate", e);
             }
             return (orderAId != null);
+        }
+
+        private String getValidAmount() {
+            if (CryptoCurrency.SOL.getCode().equalsIgnoreCase(cryptoCurrency)) {
+                return amount.setScale(3, RoundingMode.FLOOR).toPlainString();
+            }
+
+            return amount.toPlainString();
         }
 
         @Override
@@ -415,7 +381,7 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
 
             long checkTillTime = createTime + MAXIMUM_TIME_TO_WAIT_FOR_ORDER_TO_FINISH;
             if (System.currentTimeMillis() > checkTillTime) {
-                log.debug("PurchaseCoinsTask.onDoStep - " + ("Giving up on waiting for trade " + orderAId + " to complete."));
+                log.debug("PurchaseCoinsTask.onDoStep - Giving up on waiting for trade {} to complete.", orderAId);
                 finished = true;
                 return false;
             }
@@ -451,18 +417,37 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
 
         @Override
         public long getShortestTimeForNexStepInvocation() {
-            return 5 * 1000;
+            return 5 * 1000L;
         }
+
+        private String getBuyStatus(String buyId, String cryptoCurrency) {
+            try {
+                String coinBaseTime = getTime();
+                RateLimiter.waitForPossibleCall(getClass());
+                CBOrderResponse orderResponse = api.getBuyOrder(
+                    CB_VERSION, coinBaseTime, getAccountId(accountName, cryptoCurrency), buyId
+                );
+                if (orderResponse.errors == null) {
+                    return orderResponse.data.status;
+                } else {
+                    log.error("getBuyStatus - {}", orderResponse.getErrorMessages());
+                }
+            } catch (Exception e) {
+                log.error("getBuyStatus", e);
+            }
+            return null;
+        }
+
     }
 
     class SellCoinsTask implements ITask {
 
-        private long MAXIMUM_TIME_TO_WAIT_FOR_ORDER_TO_FINISH = 5 * 60 * 60 * 1000; // 5 hours
+        private static final long MAXIMUM_TIME_TO_WAIT_FOR_ORDER_TO_FINISH = 5 * 60 * 60 * 1000L; // 5 hours
         private long createTime;
 
-        private BigDecimal amount;
-        private String cryptoCurrency;
-        private String fiatCurrency;
+        private final BigDecimal amount;
+        private final String cryptoCurrency;
+        private final String fiatCurrency;
         private String orderAId;
         private String result;
         private boolean finished;
@@ -478,7 +463,7 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
             try {
                 String methodId = getMethodIdForCurrency(fiatCurrency, paymentMethodName);
                 if (methodId == null) {
-                    log.error("Payment method for currency " + fiatCurrency + " is not available.");
+                    log.error("Payment method for currency {} is not available.", fiatCurrency);
                 } else {
                     CBOrderRequest orderRequest = new CBOrderRequest();
                     orderRequest.total = amount.toPlainString();
@@ -487,17 +472,21 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
                     orderRequest.commit = true;
                     orderRequest.quote = false;
                     orderRequest.payment_method = methodId;
+                    orderRequest.fiatCurrency = fiatCurrency;
 
                     String coinBaseTime = getTime();
                     RateLimiter.waitForPossibleCall(getClass());
-                    CBOrderResponse orderResponse = api.sellCoins(CB_VERSION, apiKey, CoinbaseDigest.createInstance(secretKey), coinBaseTime, getAccountId(accountName, cryptoCurrency), orderRequest);
+                    CBOrderResponse orderResponse = api.sellCoins(
+                        CB_VERSION, coinBaseTime, getAccountId(accountName, cryptoCurrency), orderRequest
+                    );
 
-                    if (orderResponse.errors == null) {
+                    if (orderResponse != null && orderResponse.errors == null && orderResponse.data != null) {
                         orderAId = orderResponse.data.id;
                         createTime = System.currentTimeMillis();
-                        log.debug("SellCoinsTask.onCreate - " + ("orderAId = " + orderAId));
+                        log.debug("SellCoinsTask.onCreate - orderAId = {}", orderAId);
                     } else {
-                        log.error("SellCoinsTask.onCreate - " + orderResponse.getErrorMessages());
+                        log.error("SellCoinsTask.onCreate - PurchaseCoinsTask.onCreate - {}",
+                            orderResponse == null ? "unknown error" : orderResponse.getErrorMessages());
                     }
                 }
             } catch (Exception e) {
@@ -517,7 +506,7 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
 
             long checkTillTime = createTime + MAXIMUM_TIME_TO_WAIT_FOR_ORDER_TO_FINISH;
             if (System.currentTimeMillis() > checkTillTime) {
-                log.debug("SellCoinsTask.onDoStep - " + ("Giving up on waiting for trade " + orderAId + " to complete."));
+                log.debug("SellCoinsTask.onDoStep - Giving up on waiting for trade {} to complete.", orderAId);
                 finished = true;
                 return false;
             }
@@ -553,8 +542,25 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
 
         @Override
         public long getShortestTimeForNexStepInvocation() {
-            return 5 * 1000;
+            return 5 * 1000L;
         }
+
+        private String getSellStatus(String sellId, String cryptoCurrency) {
+            try {
+                String coinBaseTime = getTime();
+                RateLimiter.waitForPossibleCall(getClass());
+                CBOrderResponse orderResponse = api.getSellOrder(CB_VERSION, coinBaseTime, getAccountId(accountName, cryptoCurrency), sellId);
+                if (orderResponse.errors == null) {
+                    return orderResponse.data.status;
+                } else {
+                    log.error("getSellStatus - {}", orderResponse.getErrorMessages());
+                }
+            } catch (Exception e) {
+                log.error("getSellStatus", e);
+            }
+            return null;
+        }
+
     }
 
     private CBAccount getAccount(String accountName, String currency) throws IOException, TimeoutException {
@@ -566,18 +572,14 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
 
         if (accountName != null) {
             for (CBAccount cbAccount : accounts) {
-                if (accountName.equalsIgnoreCase(cbAccount.name)) {
-                    if (currency.equalsIgnoreCase(cbAccount.currency.code)) {
-                        return cbAccount;
-                    }
+                if (accountName.equalsIgnoreCase(cbAccount.name) && currency.equalsIgnoreCase(cbAccount.currency.code)) {
+                    return cbAccount;
                 }
             }
         } else {
             for (CBAccount cbAccount : accounts) {
-                if (cbAccount.primary) {
-                    if (currency.equalsIgnoreCase(cbAccount.currency.code)) {
-                        return cbAccount;
-                    }
+                if (cbAccount.primary && currency.equalsIgnoreCase(cbAccount.currency.code)) {
+                    return cbAccount;
                 }
             }
         }
@@ -600,7 +602,7 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
         do {
             RateLimiter.waitForPossibleCall(getClass());
             log.debug("Getting accounts, startingAfter: {}", startingAfter);
-            CBAccountsResponse accountsResponse = api.getAccounts(CB_VERSION, apiKey, CoinbaseDigest.createInstance(secretKey), getTime(), startingAfter);
+            CBAccountsResponse accountsResponse = api.getAccounts(CB_VERSION, getTime(), startingAfter);
             if (accountsResponse.errors != null) {
                 throw new IllegalStateException(accountsResponse.getErrorMessages());
             }
@@ -625,7 +627,8 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
 
     private String checkCryptoCurrency(String cryptoCurrency) {
         if (cryptoCurrency == null || !CRYPTO_CURRENCIES.contains(cryptoCurrency)) {
-            log.error("checkCryptoCurrency - Crypto currency \"" + cryptoCurrency + "\" is not supported. Coinbase supports " + Arrays.toString(CRYPTO_CURRENCIES.toArray()) + ".");
+            log.error("checkCryptoCurrency - Crypto currency \"{}\" is not supported. Coinbase supports {}.",
+                cryptoCurrency, Arrays.toString(CRYPTO_CURRENCIES.toArray()));
             return null;
         }
         return cryptoCurrency.toUpperCase();
@@ -635,7 +638,7 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
         Set<String> fiatCurrencies = getFiatCurrencies();
         if (fiatCurrency == null || (fiatCurrencies != null && !fiatCurrencies.contains(fiatCurrency))) {
             String supports = (fiatCurrencies != null) ? Arrays.toString(fiatCurrencies.toArray()) : "N/A";
-            log.error("checkFiatCurrency - Fiat currency \"" + fiatCurrency + "\" is not supported. Coinbase supports " + supports + ".");
+            log.error("checkFiatCurrency - Fiat currency \"{}\" is not supported. Coinbase supports {}.", fiatCurrency, supports);
             return null;
         }
         return fiatCurrency.toUpperCase();
@@ -664,8 +667,18 @@ public class CoinbaseExchange implements IRateSourceAdvanced, IExchangeAdvanced 
 
     @Override
     public String toString() {
-        return String.format("accountName = %s, preferedFiatCurrency = %s, apiKey = %s",
-            accountName, preferedFiatCurrency, apiKey);
+        return String.format("accountName = %s, preferredFiatCurrency = %s", accountName, preferredFiatCurrency);
     }
 
+    public CoinbaseApiWrapper getApi() {
+        return api;
+    }
+
+    public String getAccountName() {
+        return accountName;
+    }
+
+    public String getPaymentMethodName() {
+        return paymentMethodName;
+    }
 }

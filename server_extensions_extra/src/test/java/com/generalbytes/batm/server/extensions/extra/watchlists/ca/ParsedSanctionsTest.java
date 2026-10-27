@@ -3,38 +3,39 @@ package com.generalbytes.batm.server.extensions.extra.watchlists.ca;
 import com.generalbytes.batm.server.extensions.extra.watchlists.Match;
 import com.generalbytes.batm.server.extensions.extra.watchlists.ca.tags.DataSet;
 import com.generalbytes.batm.server.extensions.extra.watchlists.ca.tags.Record;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ParsedSanctionsTest {
+class ParsedSanctionsTest {
 
     @Test
-    public void testSearchOk() {
+    void testSearchOk() {
         final Record record = createRecord("FirstName MiddleName ", " LastName ");
         final ParsedSanctions parsedSanctions = initializeParsedSanctions(record);
         assertMatch(parsedSanctions.search("fIrStNaMe", "lastNAME"), 100);
     }
 
     @Test
-    public void testSearchLastNameMatch() {
+    void testSearchLastNameMatch() {
         final Record record = createRecord("Unknown", " LastName ");
         final ParsedSanctions parsedSanctions = initializeParsedSanctions(record);
         assertMatch(parsedSanctions.search("fIrStNaMe", "lastNAME"), 50);
     }
 
     @Test
-    public void testSearchLastNameMatchNoFirstName() {
+    void testSearchLastNameMatchNoFirstName() {
         final Record record = createRecord("Unknown", " LastName ");
         final ParsedSanctions parsedSanctions = initializeParsedSanctions(record);
         assertMatch(parsedSanctions.search(null, "lastNAME"), 100);
     }
 
     @Test
-    public void testSearchAliasMatch() {
+    void testSearchAliasMatch() {
         final Record record = createRecord("Unknown", "Stranger");
         record.setAliases("Someone with lastname");
         final ParsedSanctions parsedSanctions = initializeParsedSanctions(record);
@@ -42,7 +43,7 @@ public class ParsedSanctionsTest {
     }
 
     @Test
-    public void testSearchAliasMatchNoFirstName() {
+    void testSearchAliasMatchNoFirstName() {
         final Record record = createRecord("Unknown", "Stranger");
         record.setAliases("Someone with lastname");
         final ParsedSanctions parsedSanctions = initializeParsedSanctions(record);
@@ -50,11 +51,20 @@ public class ParsedSanctionsTest {
     }
 
     @Test
-    public void testSearchNotFound() {
+    void testSearchNotFound() {
         final Record record = createRecord("Unknown", " LastName ");
 
         final ParsedSanctions parsedSanctions = initializeParsedSanctions(record);
         final Set<Match> result = parsedSanctions.search("totally", "different");
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testSearchAliasNoMatch() {
+        final Record record = createRecord("Vladimir Rudolfovich", "SOLOVYOV");
+        record.setAliases("Владимир Рудольфович Соловьёв; Vladimir Solovev; Soloviev");
+        final ParsedSanctions parsedSanctions = initializeParsedSanctions(record);
+        Set<Match> result = parsedSanctions.search("Unknown", "Vlad");
         assertTrue(result.isEmpty());
     }
 

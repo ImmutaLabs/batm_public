@@ -1,40 +1,27 @@
-apply plugin: "java"
-apply plugin: "com.generalbytes.gradle.main"
-apply plugin: 'maven-publish'
+plugins {
+    id("shared-publish-conventions")
+}
 
 group = projectGroup
 version = projectVersion
 
-
 dependencies {
-    compile(group: 'org.slf4j', name: 'slf4j-api', version: '1.7.28')
-    testCompile (group: 'junit', name: 'junit', version: '4.13.1')
+    implementation("org.slf4j:slf4j-api:1.7.36")
+    // keeping junit 4 for compatibility, will be removed soon, use junit 5 instead
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.junit.vintage:junit-vintage-engine:5.11.4")
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.4")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.11.4")
 }
 
-publishing {
-    if (hasGbUploadArtifactory) {
-        repositories {
-            maven {
-                credentials {
-                    username gbArtifactoryUser
-                    password gbArtifactoryPassword
-                }
-                url gbArtifactoryUploadUrl
-            }
-        }
-    }
-
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-        }
+java {
+    toolchain {
+        // must stay on Java 11 due to compatibility issues
+        languageVersion.set(JavaLanguageVersion.of(11))
     }
 }
 
-dependencySubstitutions {
-    substitute file(batmDependencySubstitutionConfig)
-}
-dependencyVerifications {
-    checksums batmDependencyChecksumsConfig
-    printUnusedAssertions false
+test {
+    useJUnitPlatform()
 }
